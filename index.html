@@ -97,7 +97,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import {
         getAuth, GoogleAuthProvider, signInWithPopup,
-        signOut, onAuthStateChanged
+        signInAnonymously, signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
@@ -151,20 +151,41 @@
     onAuthStateChanged(auth, (user) => {
         loadBar.style.width = '100%';
         setTimeout(() => { loadBar.style.display = 'none'; }, 300);
+
+        if (!user) {
+            // 資料庫規則要求「已驗證」才能寫入，所以沒有 Google 登入時
+            // 自動用匿名登入建立一個驗證身份，玩家不需要額外操作
+            signInAnonymously(auth).catch((err) => {
+                console.error('匿名登入失敗:', err.code, err.message);
+                showAuthError('無法建立驗證身份，分數可能無法存入雲端。請至 Firebase 主控台 → Authentication → Sign-in method，確認「匿名」登入已啟用。');
+                updateUserUI(null);
+            });
+            return; // 匿名登入成功後 onAuthStateChanged 會再次觸發，屆時再更新 UI
+        }
+
         updateUserUI(user);
     });
 
     function updateUserUI(user) {
-        if (user) {
-            currentUser = user;
+        currentUser = user;
+        if (user && !user.isAnonymous) {
+            // Google 登入成功
             statusText.innerText = `👤 玩家：${user.displayName || '雲端高手'}`;
             statusText.style.color = "#81c784";
             loginBtn.style.display = 'none';
             logoutBtn.style.display = 'inline-block';
-        } else {
-            currentUser = null;
-            statusText.innerText = "👤 遊客模式 (點擊綁定雲端)";
+        } else if (user && user.isAnonymous) {
+            // 匿名身份：已可正常寫入分數，但畫面上仍鼓勵綁定 Google
+            statusText.innerText = "👤 遊客模式 (點擊綁定 Google 保存紀錄)";
             statusText.style.color = "#ffb74d";
+            loginBtn.style.display = 'inline-block';
+            loginBtn.disabled = false;
+            loginBtn.innerText = '綁定 Google';
+            logoutBtn.style.display = 'none';
+        } else {
+            // 完全沒有身份（匿名登入也失敗時）
+            statusText.innerText = "👤 未驗證 (雲端功能可能受限)";
+            statusText.style.color = "#ef5350";
             loginBtn.style.display = 'inline-block';
             loginBtn.disabled = false;
             loginBtn.innerText = '綁定 Google';
@@ -264,7 +285,7 @@
             // 準備寫入雲端
             const recordId = "score_" + Date.now();
             const recordData = {
-                player: currentUser ? (currentUser.displayName || "雲端挑戰者") : "在地遊客",
+                player: (currentUser && !currentUser.isAnonymous) ? (currentUser.displayName || "雲端挑戰者") : "在地遊客",
                 guesses: guessCount,
                 badge: badgeName,
                 time: new Date().toLocaleString()
@@ -277,9 +298,14 @@
                     cloudTag.style.background = "#2e7d32";
                 })
                 .catch((err) => {
-                    cloudTag.innerText = "同步失敗 (在地暫存)";
-                    cloudTag.style.background = "#757575";
-                    console.log("寫入失敗（通常為Rules未開放）:", err.message);
+                    // 把實際錯誤代碼顯示出來，方便判斷是不是 Realtime Database Rules 的問題
+                    cloudTag.innerText = `寫入失敗: ${err.code || err.message}`;
+                    cloudTag.style.background = "#c62828";
+                    cloudTag.title = err.message;
+                    console.error("寫入資料庫失敗:", err.code, err.message);
+                    if (err.code === 'PERMISSION_DENIED') {
+                        showAuthError('資料庫寫入被拒絕（PERMISSION_DENIED）：請至 Firebase 主控台 → Realtime Database → Rules，確認 "scores" 節點允許寫入（.write）。');
+                    }
                 });
 
         } else {
