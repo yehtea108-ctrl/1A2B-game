@@ -42,6 +42,7 @@
         input:focus { border-color: var(--primary-color); }
         button { padding: 12px 24px; cursor: pointer; background: var(--primary-color); border: none; border-radius: 12px; font-weight: bold; margin: 5px; color: #000; font-size: 1rem; transition: opacity 0.1s; }
         button:active { opacity: 0.8; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .log-container { margin-top: 20px; text-align: left; max-height: 220px; overflow-y: auto; border-top: 1px solid #333; padding-top: 10px; }
         .log-item { border-bottom: 1px solid #2a2a2a; padding: 10px 5px; display: flex; justify-content: space-between; font-family: monospace; font-size: 1.05rem; }
@@ -52,6 +53,9 @@
         
         /* 同步提示 */
         .cloud-badge { font-size: 11px; background: #e65100; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 5px; display: none; }
+
+        /* 登入錯誤提示 */
+        #authError { display: none; font-size: 11px; color: #ff8a80; margin-top: 6px; max-width: 300px; text-align: center; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -68,8 +72,10 @@
     <div id="auth-area">
         <span id="status" style="color: var(--accent-color);">雲端連線初始化...</span>
         <button id="loginBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: var(--primary-color); margin-left: 10px; border-radius: 20px;">綁定 Google</button>
+        <button id="logoutBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: #555; color:#fff; margin-left: 10px; border-radius: 20px;">登出</button>
         <div id="loadBar" class="loading-bar"></div>
     </div>
+    <div id="authError"></div>
 
     <div class="box">
         <div id="hintMessage" style="color: var(--primary-color); font-weight: bold; min-height: 24px; font-size: 1.1rem;">遊戲準備中...</div>
@@ -89,7 +95,10 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+        getAuth, GoogleAuthProvider, signInWithPopup,
+        signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     // 完美融合您的 App 配置與您提供的 OAuth Client ID
@@ -100,8 +109,7 @@
         storageBucket: "a2b-89299.firebasestorage.app",
         messagingSenderId: "685135427869",
         appId: "1:685135427869:web:8e6ddc7f971e84b86b89f4",
-        databaseURL: "https://a2b-89299-default-rtdb.asia-southeast1.firebasedatabase.app",
-        clientId: "685135427869-32pphrnjqgj258csq7o90a57jqa4tj1k.apps.googleusercontent.com" // 🛠️ 成功補上身分認證標籤
+        databaseURL: "https://a2b-89299-default-rtdb.asia-southeast1.firebasedatabase.app"
     };
 
     // 初始化 Firebase 全家桶
@@ -120,26 +128,26 @@
     document.getElementById('theme-green').onclick = () => document.documentElement.setAttribute('data-theme', 'green');
     document.getElementById('theme-cyber').onclick = () => document.documentElement.setAttribute('data-theme', 'cyber');
 
-    // --- 異步防卡死登入狀態監聽 ---
+    // --- 登入狀態監聽 ---
     const statusText = document.getElementById('status');
     const loadBar = document.getElementById('loadBar');
     const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const authErrorBox = document.getElementById('authError');
 
     loadBar.style.width = '40%';
     statusText.innerText = '正在檢查玩家憑證...';
 
-    // 攔截 Google 重導向回來後的授權結果
-    getRedirectResult(auth)
-        .then((result) => {
-            if (result && result.user) {
-                updateUserUI(result.user);
-            }
-        })
-        .catch(err => {
-            console.warn("重導向快取載入完成:", err.message);
-        });
-    
-    // 實時監聽登入權限（最平滑流暢的做法，不卡死執行緒）
+    function showAuthError(message) {
+        authErrorBox.innerText = message;
+        authErrorBox.style.display = 'block';
+    }
+    function clearAuthError() {
+        authErrorBox.style.display = 'none';
+        authErrorBox.innerText = '';
+    }
+
+    // 監聽登入狀態（初次載入就會觸發一次，不需要另外處理 redirect 結果）
     onAuthStateChanged(auth, (user) => {
         loadBar.style.width = '100%';
         setTimeout(() => { loadBar.style.display = 'none'; }, 300);
@@ -152,22 +160,59 @@
             statusText.innerText = `👤 玩家：${user.displayName || '雲端高手'}`;
             statusText.style.color = "#81c784";
             loginBtn.style.display = 'none';
+            logoutBtn.style.display = 'inline-block';
         } else {
             currentUser = null;
             statusText.innerText = "👤 遊客模式 (點擊綁定雲端)";
             statusText.style.color = "#ffb74d";
             loginBtn.style.display = 'inline-block';
+            loginBtn.disabled = false;
+            loginBtn.innerText = '綁定 Google';
+            logoutBtn.style.display = 'none';
         }
     }
 
-    loginBtn.onclick = () => {
-        statusText.innerText = "重新導入 Google 身分...";
-        signInWithRedirect(auth, provider);
+    // 使用彈窗登入 (signInWithPopup) 取代整頁跳轉的 signInWithRedirect：
+    // 在 iframe 預覽 / 未授權網域等環境中，redirect 常會被靜默擋掉，
+    // 且原本錯誤只丟進 console，畫面上完全看不到，會讓人以為「卡住」。
+    loginBtn.onclick = async () => {
+        clearAuthError();
+        loginBtn.disabled = true;
+        loginBtn.innerText = '登入中...';
+        try {
+            const result = await signInWithPopup(auth, provider);
+            updateUserUI(result.user);
+        } catch (err) {
+            loginBtn.disabled = false;
+            loginBtn.innerText = '綁定 Google';
+            console.error('Google 登入失敗:', err.code, err.message);
+
+            if (err.code === 'auth/popup-blocked') {
+                showAuthError('瀏覽器擋住了登入彈窗，請允許此網站的彈出視窗後再試一次。');
+            } else if (err.code === 'auth/unauthorized-domain') {
+                showAuthError('此網域尚未在 Firebase 主控台的「授權網域」中設定，請至 Authentication → Settings → Authorized domains 新增目前網域。');
+            } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+                // 使用者自己關掉彈窗，不需顯示錯誤
+            } else if (err.code === 'auth/operation-not-supported-in-this-environment') {
+                showAuthError('目前這個瀏覽環境（例如內嵌 iframe 或部分 App 內建瀏覽器）不支援 Google 登入彈窗，請改用手機/電腦上的一般瀏覽器開啟此頁面。');
+            } else {
+                showAuthError(`登入失敗：${err.message}`);
+            }
+        }
+    };
+
+    logoutBtn.onclick = async () => {
+        await signOut(auth);
     };
 
     // --- 1A2B 遊戲核心邏輯：重來才清空紀錄，答對時不清空 ---
     function restartGame() {
-        let nums = ['0','1','2','3','4','5','6','7','8','9'].sort(() => 0.5 - Math.random());
+        let nums = ['0','1','2','3','4','5','6','7','8','9'];
+        // Fisher–Yates shuffle（比原本的 sort(random) 更均勻）
+        for (let i = nums.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [nums[i], nums[j]] = [nums[j], nums[i]];
+        }
         answer = nums.slice(0, 4).join('');
         guessCount = 0;
         gameActive = true;
@@ -225,16 +270,16 @@
                 time: new Date().toLocaleString()
             };
 
-            // 無不論有沒有登入，都直接非同步拋入資料庫
+            // 無論有沒有登入，都直接非同步拋入資料庫
             set(ref(db, 'scores/' + recordId), recordData)
                 .then(() => {
                     cloudTag.innerText = "已存入雲端";
                     cloudTag.style.background = "#2e7d32";
                 })
                 .catch((err) => {
-                    cloudTag.innerText = "同步成功 (在地暫存)";
+                    cloudTag.innerText = "同步失敗 (在地暫存)";
                     cloudTag.style.background = "#757575";
-                    console.log("寫入成功阻斷提示（通常為Rules未開放）:", err.message);
+                    console.log("寫入失敗（通常為Rules未開放）:", err.message);
                 });
 
         } else {
