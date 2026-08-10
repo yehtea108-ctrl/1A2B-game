@@ -3,148 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1A2B 猜數字</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23f5f0e6'/%3E%3Ctext x='50' y='62' font-family='Arial' font-weight='700' font-size='30' fill='%232c3e50' text-anchor='middle'%3E1A2B%3C/text%3E%3C/svg%3E">
-    <meta property="og:title" content="1A2B 猜數字">
-    <meta property="og:description" content="經典猜數字邏輯遊戲，支援雲端同步與跨裝置紀錄">
-    <meta property="og:image" content="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f5f0e6'/%3E%3Ctext x='200' y='230' font-family='Arial' font-weight='700' font-size='90' fill='%232c3e50' text-anchor='middle'%3E1A2B%3C/text%3E%3C/svg%3E">
+    <title>1A2B 猜數字 - 雲端認證雙強豪華版</title>
     <style>
+        /* 預設深色主題 */
         :root {
             --bg-color: #121212;
             --box-bg: #1e1e1e;
-            --circle-bg: #2a2a2a;
-            --input-bg: #121212;
             --text-color: #ffffff;
             --primary-color: #29b6f6;
             --accent-color: #ffb74d;
-            --border-color: #3a3a3a;
         }
-        [data-theme="light"] {
-            --bg-color: #f5f0e6;
-            --box-bg: #ffffff;
-            --circle-bg: #eee6d3;
-            --input-bg: #ffffff;
-            --text-color: #2c3e50;
-            --primary-color: #2c3e50;
-            --accent-color: #c9822f;
-            --border-color: #d8cdb8;
+        /* 極光綠主題 */
+        [data-theme="green"] {
+            --bg-color: #0b130e;
+            --box-bg: #142219;
+            --text-color: #e0f2f1;
+            --primary-color: #4db6ac;
+            --accent-color: #a7ffeb;
+        }
+        /* 賽博朋克主題 */
+        [data-theme="cyber"] {
+            --bg-color: #1a0033;
+            --box-bg: #2d0059;
+            --text-color: #00ffff;
+            --primary-color: #ff007f;
+            --accent-color: #ffff00;
         }
 
         body { background-color: var(--bg-color); color: var(--text-color); font-family: -apple-system, sans-serif; text-align: center; padding: 20px; transition: all 0.3s ease; margin: 0; }
         .container { display: inline-block; width: 100%; max-width: 340px; margin: 0 auto; }
-        .box { background: var(--box-bg); padding: 20px; border-radius: 20px; width: 100%; box-sizing: border-box; margin-top: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.22); text-align: center; }
-
-        #auth-area { background: var(--box-bg); padding: 12px 20px; border-radius: 50px; display: inline-flex; align-items: center; justify-content: center; min-width: 240px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); margin-bottom: 10px; font-size: 13px; font-weight: bold; position: relative; overflow: hidden; }
+        .box { background: var(--box-bg); padding: 20px; border-radius: 20px; width: 100%; box-sizing: border-box; margin-top: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.4); text-align: center; }
+        
+        /* 帳號狀態與流暢載入動畫 */
+        #auth-area { background: var(--box-bg); padding: 12px 20px; border-radius: 50px; display: inline-flex; align-items: center; justify-content: center; min-width: 240px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin-bottom: 10px; font-size: 13px; font-weight: bold; position: relative; overflow: hidden; }
         .loading-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--primary-color); width: 0; transition: width 0.4s ease; }
-
-        input { display: block; margin: 20px auto; padding: 14px; width: 85%; border-radius: 12px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); text-align: center; font-size: 1.4rem; letter-spacing: 4px; outline: none; }
+        
+        input { display: block; margin: 20px auto; padding: 14px; width: 85%; border-radius: 12px; border: 1px solid #333; background: #121212; color: #fff; text-align: center; font-size: 1.4rem; letter-spacing: 4px; outline: none; }
         input:focus { border-color: var(--primary-color); }
-        button { padding: 12px 24px; cursor: pointer; background: var(--primary-color); border: none; border-radius: 12px; font-weight: bold; margin: 5px; color: #fff; font-size: 1rem; transition: opacity 0.1s; }
-        [data-theme="light"] button { color: #fff; }
+        button { padding: 12px 24px; cursor: pointer; background: var(--primary-color); border: none; border-radius: 12px; font-weight: bold; margin: 5px; color: #000; font-size: 1rem; transition: opacity 0.1s; }
         button:active { opacity: 0.8; }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .log-container { margin-top: 20px; text-align: left; max-height: 220px; overflow-y: auto; border-top: 1px solid #333; padding-top: 10px; }
+        .log-item { border-bottom: 1px solid #2a2a2a; padding: 10px 5px; display: flex; justify-content: space-between; font-family: monospace; font-size: 1.05rem; }
+        .log-item.success { color: #81c784; font-weight: bold; background: rgba(129, 199, 132, 0.1); border-radius: 6px; }
+        
+        .badge { display: inline-block; padding: 6px 12px; background: var(--accent-color); color: #000; font-weight: bold; border-radius: 8px; font-size: 0.9rem; margin-top: 8px; }
+        .theme-btn { padding: 6px 12px; font-size: 0.8rem; background: #333; color: #fff; border: none; margin: 3px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        
+        /* 同步提示 */
+        .cloud-badge { font-size: 11px; background: #e65100; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 5px; display: none; }
 
-        .log-container { margin-top: 20px; text-align: left; max-height: 220px; overflow-y: auto; border-top: 1px solid var(--border-color); padding-top: 10px; }
-        .log-item { border-bottom: 1px solid var(--border-color); padding: 10px 5px; display: flex; justify-content: space-between; font-family: monospace; font-size: 1.05rem; }
-        .log-item.success { color: #4caf7d; font-weight: bold; background: rgba(76, 175, 125, 0.12); border-radius: 6px; }
-
-        .badge { display: inline-block; padding: 6px 12px; background: var(--accent-color); color: #1a1a1a; font-weight: bold; border-radius: 8px; font-size: 0.9rem; margin-top: 8px; }
-        .theme-toggle-btn { padding: 8px 18px; font-size: 0.85rem; background: var(--box-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 20px; cursor: pointer; font-weight: bold; }
-
-        .cloud-badge { font-size: 11px; color: #888; margin-left: 5px; }
-
-        #authError { display: none; font-size: 11px; color: #e07a6e; margin-top: 6px; max-width: 300px; text-align: center; line-height: 1.4; }
-
-        /* 計算紙小工具（獨立筆記，不影響上方輸入） */
-        .picker-title { font-size: 0.85rem; color: #999; margin: 14px 0 6px; }
-        .number-picker { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 280px; margin: 0 auto; }
-        .num-circle { width: 46px; height: 46px; border-radius: 50%; background: var(--circle-bg); color: var(--text-color); border: 1.5px solid var(--border-color); font-size: 1.1rem; font-weight: bold; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; }
-        .num-circle.excluded { opacity: 0.5; text-decoration: line-through; }
-        .num-circle.confirmed { background: #4caf7d; color: #0b1f0d; border-color: #4caf7d; }
-        #pickerLegend { font-size: 0.72rem; color: #888; margin-top: 8px; }
-        #pickerClearBtn { background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); font-size: 0.8rem; padding: 6px 14px; margin-top: 6px; }
-
-        #syncStatus { font-size: 0.65rem; color: #888; display: block; margin-top: 4px; min-height: 12px; }
-
-        /* 子母浮動視窗（不遮擋主畫面，可直接拖曳移動） */
-        .pip-panel { display: none; position: fixed; top: 70px; right: 12px; width: 250px; max-height: 60vh; overflow-y: auto; background: var(--box-bg); border-radius: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.22); padding: 14px; box-sizing: border-box; z-index: 60; border: 1px solid var(--border-color); }
-        .pip-header { display: flex; justify-content: space-between; align-items: center; cursor: move; margin-bottom: 8px; font-weight: bold; font-size: 0.9rem; touch-action: none; }
-        .pip-close { background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.75rem; cursor: pointer; padding: 4px 10px; margin: 0; }
-        .owner-tag { font-size: 0.72rem; color: #999; margin-bottom: 10px; }
-        .history-item { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid var(--border-color); font-size: 0.8rem; text-align: left; }
-        .history-empty { font-size: 0.85rem; color: #777; padding: 16px 0; }
-        #historyBtn { background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); font-size: 0.8rem; padding: 8px 16px; }
+        /* 登入錯誤提示 */
+        #authError { display: none; font-size: 11px; color: #ff8a80; margin-top: 6px; max-width: 300px; text-align: center; line-height: 1.4; }
     </style>
 </head>
 <body>
 <div class="container">
 
-    <h1>1A2B 猜數字</h1>
-
+    <h1>1A2B 猜數字 🏆</h1>
+    
     <div style="margin-bottom: 15px;">
-        <button class="theme-toggle-btn" id="themeToggleBtn">切換淺色</button>
+        <button class="theme-btn" id="theme-dark">深色模式</button>
+        <button class="theme-btn" id="theme-green" style="background:#142219; color:#4db6ac;">極光綠</button>
+        <button class="theme-btn" id="theme-cyber" style="background:#2d0059; color:#ff007f;">賽博朋克</button>
     </div>
 
     <div id="auth-area">
         <span id="status" style="color: var(--accent-color);">雲端連線初始化...</span>
         <button id="loginBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: var(--primary-color); margin-left: 10px; border-radius: 20px;">綁定 Google</button>
-        <button id="logoutBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); margin-left: 10px; border-radius: 20px;">登出</button>
+        <button id="logoutBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: #555; color:#fff; margin-left: 10px; border-radius: 20px;">登出</button>
         <div id="loadBar" class="loading-bar"></div>
     </div>
     <div id="authError"></div>
 
     <div class="box">
         <div id="hintMessage" style="color: var(--primary-color); font-weight: bold; min-height: 24px; font-size: 1.1rem;">遊戲準備中...</div>
-        <span id="syncStatus"></span>
         <div id="badgeDisplay"></div>
-
+        
         <input type="text" id="userGuess" maxlength="4" pattern="\d*" inputmode="numeric" placeholder="輸入4位不重複數字">
-
-        <div class="picker-title">計算紙（獨立筆記，不影響上方輸入，點擊切換標記）</div>
-        <div class="number-picker" id="numberPicker">
-            <button class="num-circle" data-num="0">0</button>
-            <button class="num-circle" data-num="1">1</button>
-            <button class="num-circle" data-num="2">2</button>
-            <button class="num-circle" data-num="3">3</button>
-            <button class="num-circle" data-num="4">4</button>
-            <button class="num-circle" data-num="5">5</button>
-            <button class="num-circle" data-num="6">6</button>
-            <button class="num-circle" data-num="7">7</button>
-            <button class="num-circle" data-num="8">8</button>
-            <button class="num-circle" data-num="9">9</button>
-        </div>
-        <div id="pickerLegend">灰=排除、綠=確定在密碼裡</div>
-        <button id="pickerClearBtn">清除標記</button>
-
+        
         <div style="display: flex; justify-content: center; gap: 5px;">
             <button id="guessBtn" style="flex: 1;">猜測</button>
-            <button id="restartBtn" style="background:#c0574f; color:#fff;">重來</button>
+            <button id="restartBtn" style="background:#ef5350; color:#fff;">重來</button>
         </div>
-        <button id="historyBtn">我的紀錄</button>
-
+        
         <div class="log-container" id="historyLogs"></div>
     </div>
 
-</div>
-
-<!-- 子母浮動視窗：不遮擋主畫面，可拖曳移動位置 -->
-<div class="pip-panel" id="historyPanel">
-    <div class="pip-header" id="pipHeader">
-        <span>我的紀錄</span>
-        <button class="pip-close" id="historyCloseBtn">關閉</button>
-    </div>
-    <div class="owner-tag" id="historyOwnerTag"></div>
-    <div id="historyList"><div class="history-empty">載入中...</div></div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import {
         getAuth, GoogleAuthProvider, signInWithPopup,
-        signInAnonymously, signOut, onAuthStateChanged
+        signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+    // 完美融合您的 App 配置與您提供的 OAuth Client ID
     const firebaseConfig = {
         apiKey: "AIzaSyDbK2ckyJP_RlAGEcTUlOfk3nlWfwDa_HQ",
         authDomain: "a2b-89299.firebaseapp.com",
@@ -155,6 +112,7 @@
         databaseURL: "https://a2b-89299-default-rtdb.asia-southeast1.firebasedatabase.app"
     };
 
+    // 初始化 Firebase 全家桶
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
@@ -164,28 +122,13 @@
     let guessCount = 0;
     let gameActive = true;
     let currentUser = null;
-    let lastLoadedUid = null;
-    let historyEntries = []; // 記憶體中的本局紀錄（newest-first），與 game_state 同步
 
-    // --- 深淺色切換（僅保留這一組） ---
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    let currentTheme = 'dark';
-    function applyTheme(theme) {
-        if (theme === 'light') {
-            document.documentElement.setAttribute('data-theme', 'light');
-            themeToggleBtn.innerText = '切換深色';
-        } else {
-            document.documentElement.removeAttribute('data-theme');
-            themeToggleBtn.innerText = '切換淺色';
-        }
-    }
-    applyTheme(currentTheme);
-    themeToggleBtn.onclick = () => {
-        currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        applyTheme(currentTheme);
-    };
+    // --- 主題切換功能 ---
+    document.getElementById('theme-dark').onclick = () => document.documentElement.removeAttribute('data-theme');
+    document.getElementById('theme-green').onclick = () => document.documentElement.setAttribute('data-theme', 'green');
+    document.getElementById('theme-cyber').onclick = () => document.documentElement.setAttribute('data-theme', 'cyber');
 
-    // --- 登入狀態 ---
+    // --- 登入狀態監聽 ---
     const statusText = document.getElementById('status');
     const loadBar = document.getElementById('loadBar');
     const loginBtn = document.getElementById('loginBtn');
@@ -204,40 +147,24 @@
         authErrorBox.innerText = '';
     }
 
-    onAuthStateChanged(auth, async (user) => {
+    // 監聽登入狀態（初次載入就會觸發一次，不需要另外處理 redirect 結果）
+    onAuthStateChanged(auth, (user) => {
         loadBar.style.width = '100%';
         setTimeout(() => { loadBar.style.display = 'none'; }, 300);
-
-        if (!user) {
-            signInAnonymously(auth).catch((err) => {
-                console.error('匿名登入失敗:', err.code, err.message);
-                showAuthError('無法建立驗證身份，進度可能無法同步。請確認 Firebase 主控台已啟用「匿名」登入方式。');
-                updateUserUI(null);
-            });
-            return;
-        }
-
         updateUserUI(user);
-        await ensureGameLoadedFor(user);
     });
 
     function updateUserUI(user) {
-        currentUser = user;
-        if (user && !user.isAnonymous) {
-            statusText.innerText = `玩家：${user.displayName || '雲端高手'}`;
-            statusText.style.color = "#4caf7d";
+        if (user) {
+            currentUser = user;
+            statusText.innerText = `👤 玩家：${user.displayName || '雲端高手'}`;
+            statusText.style.color = "#81c784";
             loginBtn.style.display = 'none';
             logoutBtn.style.display = 'inline-block';
-        } else if (user && user.isAnonymous) {
-            statusText.innerText = "遊客模式（點擊綁定 Google 保存紀錄）";
-            statusText.style.color = "var(--accent-color)";
-            loginBtn.style.display = 'inline-block';
-            loginBtn.disabled = false;
-            loginBtn.innerText = '綁定 Google';
-            logoutBtn.style.display = 'none';
         } else {
-            statusText.innerText = "未驗證（雲端功能可能受限）";
-            statusText.style.color = "#e07a6e";
+            currentUser = null;
+            statusText.innerText = "👤 遊客模式 (點擊綁定雲端)";
+            statusText.style.color = "#ffb74d";
             loginBtn.style.display = 'inline-block';
             loginBtn.disabled = false;
             loginBtn.innerText = '綁定 Google';
@@ -245,6 +172,9 @@
         }
     }
 
+    // 使用彈窗登入 (signInWithPopup) 取代整頁跳轉的 signInWithRedirect：
+    // 在 iframe 預覽 / 未授權網域等環境中，redirect 常會被靜默擋掉，
+    // 且原本錯誤只丟進 console，畫面上完全看不到，會讓人以為「卡住」。
     loginBtn.onclick = async () => {
         clearAuthError();
         loginBtn.disabled = true;
@@ -264,7 +194,7 @@
             } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
                 // 使用者自己關掉彈窗，不需顯示錯誤
             } else if (err.code === 'auth/operation-not-supported-in-this-environment') {
-                showAuthError('目前這個瀏覽環境不支援 Google 登入彈窗，請改用一般瀏覽器開啟此頁面。');
+                showAuthError('目前這個瀏覽環境（例如內嵌 iframe 或部分 App 內建瀏覽器）不支援 Google 登入彈窗，請改用手機/電腦上的一般瀏覽器開啟此頁面。');
             } else {
                 showAuthError(`登入失敗：${err.message}`);
             }
@@ -275,155 +205,10 @@
         await signOut(auth);
     };
 
-    // --- 進度即時同步：每一步都上傳，避免網頁重載被重置遊戲 ---
-    async function ensureGameLoadedFor(user) {
-        if (!user || lastLoadedUid === user.uid) return;
-        lastLoadedUid = user.uid;
-        try {
-            const snap = await get(ref(db, `game_state/${user.uid}`));
-            if (snap.exists() && snap.val().gameActive) {
-                restoreGame(snap.val());
-                return;
-            }
-        } catch (err) {
-            console.warn('讀取進度失敗，開新局:', err.code || err.message);
-        }
-        restartGame();
-    }
-
-    function restoreGame(state) {
-        answer = state.answer;
-        guessCount = state.guessCount || 0;
-        gameActive = true;
-        historyEntries = Array.isArray(state.historyEntries) ? state.historyEntries : [];
-
-        document.getElementById('badgeDisplay').innerHTML = '';
-        document.getElementById('hintMessage').innerText = state.hintMessage || '進度已還原，請繼續猜！';
-        document.getElementById('userGuess').value = '';
-        renderHistoryLogs();
-    }
-
-    function renderHistoryLogs() {
-        const logBox = document.getElementById('historyLogs');
-        logBox.innerHTML = historyEntries.map(e => {
-            if (e.success) {
-                return `<div class="log-item success"><span>第 ${e.n} 次猜測：${e.g}（完全正確）</span><span>${e.a}A${e.b}B</span></div>`;
-            }
-            return `<div class="log-item"><span>第 ${e.n} 次猜測：${e.g}</span><span>${e.a}A${e.b}B</span></div>`;
-        }).join('');
-    }
-
-    function syncGameState() {
-        if (!currentUser) return;
-        const syncStatus = document.getElementById('syncStatus');
-        if (syncStatus) syncStatus.innerText = '同步中...';
-        const hint = document.getElementById('hintMessage').innerText;
-        set(ref(db, `game_state/${currentUser.uid}`), {
-            answer, guessCount, gameActive, historyEntries, hintMessage: hint
-        }).then(() => {
-            if (syncStatus) syncStatus.innerText = '已同步';
-        }).catch((err) => {
-            console.warn('同步進度失敗:', err.code || err.message);
-            if (syncStatus) syncStatus.innerText = `同步失敗（${err.code || '未知錯誤'}）`;
-        });
-    }
-
-    // --- 計算紙小工具：純標記線索用，完全獨立於猜測輸入框 ---
-    const numCircles = document.querySelectorAll('.num-circle');
-    const digitState = {};
-
-    numCircles.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const n = btn.dataset.num;
-            const current = digitState[n];
-            let next;
-            if (!current) next = 'excluded';
-            else if (current === 'excluded') next = 'confirmed';
-            else next = null;
-
-            if (next) digitState[n] = next; else delete digitState[n];
-            btn.classList.remove('excluded', 'confirmed');
-            if (next) btn.classList.add(next);
-        });
-    });
-
-    document.getElementById('pickerClearBtn').addEventListener('click', () => {
-        numCircles.forEach(btn => {
-            btn.classList.remove('excluded', 'confirmed');
-            delete digitState[btn.dataset.num];
-        });
-    });
-
-    // --- 子母浮動視窗：我的紀錄（依身份分開，可拖曳） ---
-    const historyBtn = document.getElementById('historyBtn');
-    const historyPanel = document.getElementById('historyPanel');
-    const historyList = document.getElementById('historyList');
-    const historyOwnerTag = document.getElementById('historyOwnerTag');
-    const pipHeader = document.getElementById('pipHeader');
-
-    historyBtn.addEventListener('click', () => {
-        if (historyPanel.style.display === 'block') {
-            historyPanel.style.display = 'none';
-        } else {
-            openHistory();
-        }
-    });
-    document.getElementById('historyCloseBtn').addEventListener('click', () => {
-        historyPanel.style.display = 'none';
-    });
-
-    async function openHistory() {
-        if (!currentUser) {
-            alert('身份驗證尚未完成，請稍後再試一次。');
-            return;
-        }
-        historyPanel.style.display = 'block';
-        historyList.innerHTML = '<div class="history-empty">載入中...</div>';
-        historyOwnerTag.innerText = (!currentUser.isAnonymous)
-            ? `身份：${currentUser.displayName || '雲端高手'}`
-            : '身份：訪客（此裝置專屬）';
-
-        try {
-            const snap = await get(ref(db, `scores/${currentUser.uid}`));
-            if (!snap.exists()) {
-                historyList.innerHTML = '<div class="history-empty">還沒有任何紀錄</div>';
-                return;
-            }
-            const records = Object.values(snap.val()).sort((a, b) => (b.time > a.time ? 1 : -1));
-            historyList.innerHTML = records.map(r => `
-                <div class="history-item">
-                    <span>${r.time}</span>
-                    <span>${r.guesses} 次．${r.badge}</span>
-                </div>
-            `).join('');
-        } catch (err) {
-            console.error('讀取紀錄失敗:', err.code, err.message);
-            historyList.innerHTML = `<div class="history-empty">讀取失敗：${err.code || err.message}</div>`;
-        }
-    }
-
-    // 拖曳移動子母視窗
-    (function enableDrag(handle, panel) {
-        let dragging = false, offsetX = 0, offsetY = 0;
-        handle.addEventListener('pointerdown', (e) => {
-            dragging = true;
-            const rect = panel.getBoundingClientRect();
-            offsetX = e.clientX - rect.left;
-            offsetY = e.clientY - rect.top;
-            panel.style.right = 'auto';
-            handle.setPointerCapture(e.pointerId);
-        });
-        handle.addEventListener('pointermove', (e) => {
-            if (!dragging) return;
-            panel.style.left = (e.clientX - offsetX) + 'px';
-            panel.style.top = (e.clientY - offsetY) + 'px';
-        });
-        ['pointerup', 'pointercancel'].forEach(ev => handle.addEventListener(ev, () => { dragging = false; }));
-    })(pipHeader, historyPanel);
-
-    // --- 1A2B 遊戲核心邏輯 ---
+    // --- 1A2B 遊戲核心邏輯：重來才清空紀錄，答對時不清空 ---
     function restartGame() {
         let nums = ['0','1','2','3','4','5','6','7','8','9'];
+        // Fisher–Yates shuffle（比原本的 sort(random) 更均勻）
         for (let i = nums.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [nums[i], nums[j]] = [nums[j], nums[i]];
@@ -431,77 +216,89 @@
         answer = nums.slice(0, 4).join('');
         guessCount = 0;
         gameActive = true;
-        historyEntries = [];
-
+        
+        // 重來時清空畫面，重新發牌
         document.getElementById('historyLogs').innerHTML = '';
         document.getElementById('badgeDisplay').innerHTML = '';
         document.getElementById('hintMessage').innerText = '新遊戲開始，請輸入 4 位數！';
         document.getElementById('userGuess').value = '';
-        numCircles.forEach(btn => btn.classList.remove('excluded', 'confirmed'));
-        Object.keys(digitState).forEach(k => delete digitState[k]);
-
-        syncGameState();
     }
 
     async function checkGuess() {
         if (!gameActive) {
-            alert('本局已結束！請點擊「重來」開啟新一局。');
+            alert('本局已結束！請點擊右邊紅色的「重來」即可直接開啟新一局。');
             return;
         }
-
+        
         let g = document.getElementById('userGuess').value.trim();
         if (!/^\d{4}$/.test(g) || new Set(g).size !== 4) {
             alert('請輸入 4 位不重複的純數字！');
             return;
         }
-
+        
         guessCount++;
         let a = 0, b = 0;
-        for (let i = 0; i < 4; i++) {
-            if (g[i] === answer[i]) a++;
-            else if (answer.includes(g[i])) b++;
+        for(let i=0; i<4; i++) {
+            if(g[i] === answer[i]) a++;
+            else if(answer.includes(g[i])) b++;
         }
-
-        const success = (a === 4);
-        historyEntries.unshift({ n: guessCount, g, a, b, success });
-
-        if (success) {
-            gameActive = false;
-
-            let badgeName = "數字平民";
-            if (guessCount <= 4) badgeName = "1A2B 頂級神算";
-            else if (guessCount <= 7) badgeName = "數字專家";
-
-            document.getElementById('hintMessage').innerText = `答對了！共花了 ${guessCount} 次猜測`;
+        
+        let logBox = document.getElementById('historyLogs');
+        
+        if(a === 4) {
+            gameActive = false; // 鎖定目前畫面的數字輸入
+            
+            let badgeName = "🥉 數字平民";
+            if(guessCount <= 4) badgeName = "🥇 1A2B 頂級神算";
+            else if(guessCount <= 7) badgeName = "🥈 數字專家";
+            
+            document.getElementById('hintMessage').innerText = `🎉 答對了！共花了 ${guessCount} 次猜測`;
             document.getElementById('badgeDisplay').innerHTML = `<span class="badge">解鎖榮譽：${badgeName}</span>`;
-            renderHistoryLogs();
-            syncGameState();
+            
+            // 💡 關鍵強化：歷史紀錄完全留著不清空，並插入高亮綠色條
+            logBox.innerHTML = `<div class="log-item success"><span>#${guessCount} 猜測：${g} (完全正確) <span id="cloudTag" class="cloud-badge">同步中...</span></span><span>${a}A${b}B 🏆</span></div>` + logBox.innerHTML;
 
+            const cloudTag = document.getElementById('cloudTag');
+            cloudTag.style.display = 'inline-block';
+
+            // 準備寫入雲端
             const recordId = "score_" + Date.now();
             const recordData = {
-                player: (currentUser && !currentUser.isAnonymous) ? (currentUser.displayName || "雲端挑戰者") : "在地遊客",
+                player: currentUser ? (currentUser.displayName || "雲端挑戰者") : "在地遊客",
                 guesses: guessCount,
                 badge: badgeName,
                 time: new Date().toLocaleString()
             };
-            if (currentUser) {
-                set(ref(db, `scores/${currentUser.uid}/${recordId}`), recordData)
-                    .catch((err) => { console.warn('分數紀錄寫入失敗:', err.code || err.message); });
-            }
-        } else {
-            document.getElementById('hintMessage').innerText = `上次結果：${a}A${b}B`;
-            renderHistoryLogs();
-            syncGameState();
-        }
 
+            // 無論有沒有登入，都直接非同步拋入資料庫
+            set(ref(db, 'scores/' + recordId), recordData)
+                .then(() => {
+                    cloudTag.innerText = "已存入雲端";
+                    cloudTag.style.background = "#2e7d32";
+                })
+                .catch((err) => {
+                    cloudTag.innerText = "同步失敗 (在地暫存)";
+                    cloudTag.style.background = "#757575";
+                    console.log("寫入失敗（通常為Rules未開放）:", err.message);
+                });
+
+        } else {
+            document.getElementById('hintMessage').innerText = `上次結果: ${a}A${b}B`;
+            logBox.innerHTML = `<div class="log-item"><span>#${guessCount} 猜測：${g}</span><span>${a}A${b}B</span></div>` + logBox.innerHTML;
+        }
+        
         document.getElementById('userGuess').value = '';
     }
 
+    // 按鈕與 Enter 鍵綁定
     document.getElementById('guessBtn').addEventListener('click', checkGuess);
     document.getElementById('restartBtn').addEventListener('click', restartGame);
     document.getElementById('userGuess').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') checkGuess();
     });
+
+    // 初始化啟動第一局
+    restartGame();
 </script>
 </body>
 </html>
