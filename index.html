@@ -56,6 +56,25 @@
 
         /* 登入錯誤提示 */
         #authError { display: none; font-size: 11px; color: #ff8a80; margin-top: 6px; max-width: 300px; text-align: center; line-height: 1.4; }
+
+        /* 圈選數字小工具 */
+        .picker-title { font-size: 0.85rem; color: #999; margin: 14px 0 6px; }
+        .number-picker { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 280px; margin: 0 auto; }
+        .num-circle { width: 46px; height: 46px; border-radius: 50%; background: #2a2a2a; color: #fff; border: 2px solid #333; font-size: 1.1rem; font-weight: bold; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; }
+        .num-circle.selected { background: var(--primary-color); color: #000; border-color: var(--primary-color); }
+        .num-circle .order-tag { position: absolute; font-size: 0.6rem; margin-top: -22px; margin-left: 22px; background: var(--accent-color); color: #000; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
+        #pickerPreview { font-size: 1.3rem; letter-spacing: 6px; margin: 12px 0; font-weight: bold; color: var(--primary-color); font-family: monospace; }
+        #pickerClearBtn { background: #555; color: #fff; font-size: 0.8rem; padding: 6px 14px; }
+
+        /* 歷史紀錄面板（依身份分開） */
+        #historyPanelBackdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; align-items: flex-end; justify-content: center; }
+        #historyPanel { background: var(--box-bg); width: 100%; max-width: 340px; max-height: 70vh; overflow-y: auto; border-radius: 20px 20px 0 0; padding: 18px; box-sizing: border-box; }
+        #historyPanel h3 { margin: 0 0 10px; font-size: 1rem; }
+        #historyPanel .owner-tag { font-size: 0.75rem; color: #999; margin-bottom: 10px; }
+        .history-item { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid #2a2a2a; font-size: 0.85rem; text-align: left; }
+        .history-empty { font-size: 0.85rem; color: #777; padding: 20px 0; }
+        #historyCloseBtn { width: 100%; margin-top: 10px; background: #555; color: #fff; }
+        #historyBtn { background: #37474f; color: #fff; font-size: 0.8rem; padding: 8px 16px; }
     </style>
 </head>
 <body>
@@ -82,15 +101,41 @@
         <div id="badgeDisplay"></div>
         
         <input type="text" id="userGuess" maxlength="4" pattern="\d*" inputmode="numeric" placeholder="輸入4位不重複數字">
+
+        <div class="picker-title">或直接圈選數字（依序點選 4 個）</div>
+        <div class="number-picker" id="numberPicker">
+            <button class="num-circle" data-num="0">0</button>
+            <button class="num-circle" data-num="1">1</button>
+            <button class="num-circle" data-num="2">2</button>
+            <button class="num-circle" data-num="3">3</button>
+            <button class="num-circle" data-num="4">4</button>
+            <button class="num-circle" data-num="5">5</button>
+            <button class="num-circle" data-num="6">6</button>
+            <button class="num-circle" data-num="7">7</button>
+            <button class="num-circle" data-num="8">8</button>
+            <button class="num-circle" data-num="9">9</button>
+        </div>
+        <div id="pickerPreview">＿ ＿ ＿ ＿</div>
+        <button id="pickerClearBtn">清除圈選</button>
         
         <div style="display: flex; justify-content: center; gap: 5px;">
             <button id="guessBtn" style="flex: 1;">猜測</button>
             <button id="restartBtn" style="background:#ef5350; color:#fff;">重來</button>
         </div>
+        <button id="historyBtn">📜 查看我的紀錄</button>
         
         <div class="log-container" id="historyLogs"></div>
     </div>
 
+</div>
+
+<div id="historyPanelBackdrop">
+    <div id="historyPanel">
+        <h3>📜 我的遊戲紀錄</h3>
+        <div class="owner-tag" id="historyOwnerTag"></div>
+        <div id="historyList"><div class="history-empty">載入中...</div></div>
+        <button id="historyCloseBtn">關閉</button>
+    </div>
 </div>
 
 <script type="module">
@@ -99,7 +144,7 @@
         getAuth, GoogleAuthProvider, signInWithPopup,
         signInAnonymously, signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     // 完美融合您的 App 配置與您提供的 OAuth Client ID
     const firebaseConfig = {
@@ -226,6 +271,94 @@
         await signOut(auth);
     };
 
+    // --- 圈選數字小工具：依序點選數字組成 4 位猜測，會同步進輸入框 ---
+    const guessInput = document.getElementById('userGuess');
+    const pickerPreview = document.getElementById('pickerPreview');
+    const numCircles = document.querySelectorAll('.num-circle');
+    let pickedDigits = [];
+
+    function renderPicker() {
+        pickerPreview.innerText = [0,1,2,3].map(i => pickedDigits[i] ?? '＿').join(' ');
+        numCircles.forEach(btn => {
+            const n = btn.dataset.num;
+            btn.classList.toggle('selected', pickedDigits.includes(n));
+        });
+        guessInput.value = pickedDigits.join('');
+    }
+
+    numCircles.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const n = btn.dataset.num;
+            const existingIndex = pickedDigits.indexOf(n);
+            if (existingIndex !== -1) {
+                // 再點一次已選的數字 = 取消選取
+                pickedDigits.splice(existingIndex, 1);
+            } else if (pickedDigits.length < 4) {
+                pickedDigits.push(n);
+            }
+            renderPicker();
+        });
+    });
+
+    document.getElementById('pickerClearBtn').addEventListener('click', () => {
+        pickedDigits = [];
+        renderPicker();
+    });
+
+    // 手動在輸入框打字時，圈選畫面也要同步清空，避免顯示不一致
+    guessInput.addEventListener('input', () => {
+        if (guessInput.value.length === 0) {
+            pickedDigits = [];
+            renderPicker();
+        }
+    });
+
+    // --- 查看紀錄：每個使用者（依 UID）只讀得到自己的資料 ---
+    const historyBtn = document.getElementById('historyBtn');
+    const historyBackdrop = document.getElementById('historyPanelBackdrop');
+    const historyList = document.getElementById('historyList');
+    const historyOwnerTag = document.getElementById('historyOwnerTag');
+
+    async function openHistory() {
+        if (!currentUser) {
+            alert('身份驗證尚未完成，請稍後再試一次。');
+            return;
+        }
+        historyBackdrop.style.display = 'flex';
+        historyList.innerHTML = '<div class="history-empty">載入中...</div>';
+        historyOwnerTag.innerText = (!currentUser.isAnonymous)
+            ? `身份：${currentUser.displayName || '雲端高手'}（僅顯示你自己的紀錄）`
+            : `身份：訪客（此裝置專屬，僅顯示你自己的紀錄）`;
+
+        try {
+            const snap = await get(ref(db, `scores/${currentUser.uid}`));
+            if (!snap.exists()) {
+                historyList.innerHTML = '<div class="history-empty">還沒有任何紀錄，快去答對一題吧！</div>';
+                return;
+            }
+            const records = Object.values(snap.val())
+                .sort((a, b) => (b.time > a.time ? 1 : -1));
+
+            historyList.innerHTML = records.map(r => `
+                <div class="history-item">
+                    <span>${r.time}</span>
+                    <span>${r.guesses} 次 · ${r.badge}</span>
+                </div>
+            `).join('');
+        } catch (err) {
+            console.error('讀取紀錄失敗:', err.code, err.message);
+            historyList.innerHTML = `<div class="history-empty">讀取失敗：${err.code || err.message}</div>`;
+        }
+    }
+
+    historyBtn.addEventListener('click', openHistory);
+    document.getElementById('historyCloseBtn').addEventListener('click', () => {
+        historyBackdrop.style.display = 'none';
+    });
+    historyBackdrop.addEventListener('click', (e) => {
+        if (e.target === historyBackdrop) historyBackdrop.style.display = 'none';
+    });
+
     // --- 1A2B 遊戲核心邏輯：重來才清空紀錄，答對時不清空 ---
     function restartGame() {
         let nums = ['0','1','2','3','4','5','6','7','8','9'];
@@ -243,6 +376,8 @@
         document.getElementById('badgeDisplay').innerHTML = '';
         document.getElementById('hintMessage').innerText = '新遊戲開始，請輸入 4 位數！';
         document.getElementById('userGuess').value = '';
+        pickedDigits = [];
+        renderPicker();
     }
 
     async function checkGuess() {
@@ -282,7 +417,7 @@
             const cloudTag = document.getElementById('cloudTag');
             cloudTag.style.display = 'inline-block';
 
-            // 準備寫入雲端
+            // 準備寫入雲端 —— 依照使用者 UID 分開存放，讓每個人只存取自己的紀錄
             const recordId = "score_" + Date.now();
             const recordData = {
                 player: (currentUser && !currentUser.isAnonymous) ? (currentUser.displayName || "雲端挑戰者") : "在地遊客",
@@ -291,22 +426,26 @@
                 time: new Date().toLocaleString()
             };
 
-            // 無論有沒有登入，都直接非同步拋入資料庫
-            set(ref(db, 'scores/' + recordId), recordData)
-                .then(() => {
-                    cloudTag.innerText = "已存入雲端";
-                    cloudTag.style.background = "#2e7d32";
-                })
-                .catch((err) => {
-                    // 把實際錯誤代碼顯示出來，方便判斷是不是 Realtime Database Rules 的問題
-                    cloudTag.innerText = `寫入失敗: ${err.code || err.message}`;
-                    cloudTag.style.background = "#c62828";
-                    cloudTag.title = err.message;
-                    console.error("寫入資料庫失敗:", err.code, err.message);
-                    if (err.code === 'PERMISSION_DENIED') {
-                        showAuthError('資料庫寫入被拒絕（PERMISSION_DENIED）：請至 Firebase 主控台 → Realtime Database → Rules，確認 "scores" 節點允許寫入（.write）。');
-                    }
-                });
+            if (!currentUser) {
+                cloudTag.innerText = "尚未驗證，無法同步";
+                cloudTag.style.background = "#757575";
+            } else {
+                set(ref(db, `scores/${currentUser.uid}/${recordId}`), recordData)
+                    .then(() => {
+                        cloudTag.innerText = "已存入雲端";
+                        cloudTag.style.background = "#2e7d32";
+                    })
+                    .catch((err) => {
+                        // 把實際錯誤代碼顯示出來，方便判斷是不是 Realtime Database Rules 的問題
+                        cloudTag.innerText = `寫入失敗: ${err.code || err.message}`;
+                        cloudTag.style.background = "#c62828";
+                        cloudTag.title = err.message;
+                        console.error("寫入資料庫失敗:", err.code, err.message);
+                        if (err.code === 'PERMISSION_DENIED') {
+                            showAuthError('資料庫寫入被拒絕（PERMISSION_DENIED）：請確認 Rules 中 "scores/$uid" 節點允許本人讀寫（auth.uid === $uid）。');
+                        }
+                    });
+            }
 
         } else {
             document.getElementById('hintMessage').innerText = `上次結果: ${a}A${b}B`;
@@ -314,6 +453,8 @@
         }
         
         document.getElementById('userGuess').value = '';
+        pickedDigits = [];
+        renderPicker();
     }
 
     // 按鈕與 Enter 鍵綁定
