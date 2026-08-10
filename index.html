@@ -4,383 +4,220 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>1A2B 猜數字</title>
-
-    <!-- 網頁縮圖 (Favicon & Open Graph Image) -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231f2022'/%3E%3Crect x='5' y='5' width='90' height='90' rx='18' fill='none' stroke='%238f8a81' stroke-width='3'/%3E%3Ctext x='50' y='60' font-family='-apple-system, sans-serif' font-weight='800' font-size='28' fill='%23c58b68' text-anchor='middle'%3E1A2B%3C/text%3E%3C/svg%3E">
+    <!-- 網頁圖示與 Open Graph 縮圖 -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1e1e'/%3E%3Ctext x='50' y='62' font-family='Arial' font-weight='700' font-size='30' fill='%2329b6f6' text-anchor='middle'%3E1A2B%3C/text%3E%3C/svg%3E">
     <meta property="og:title" content="1A2B 猜數字">
     <meta property="og:description" content="經典猜數字邏輯遊戲，支援雲端同步與跨裝置紀錄">
-    <meta property="og:image" content="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%231f2022'/%3E%3Ctext x='200' y='220' font-family='-apple-system, sans-serif' font-weight='800' font-size='80' fill='%23c58b68' text-anchor='middle'%3E1A2B%3C/text%3E%3C/svg%3E">
-
+    <meta property="og:image" content="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23121212'/%3E%3Crect x='50' y='50' width='300' height='300' rx='40' fill='%231e1e1e'/%3E%3Ctext x='200' y='230' font-family='Arial' font-weight='700' font-size='90' fill='%2329b6f6' text-anchor='middle'%3E1A2B%3C/text%3E%3C/svg%3E">
+    
     <style>
-        /* iPhone 16 Pro 鈦金屬風格主題配色 */
         :root {
-            --bg-color: #131415;
-            --box-bg: #1f2022;
-            --circle-bg: #2b2c2e;
-            --input-bg: #131415;
-            --text-color: #f5f5f7;
-            --primary-color: #c58b68; /* 沙漠鈦金 */
-            --accent-color: #8f8a81;  * 原色鈦金 */
-            --border-color: #38393c;
-            --success-color: #4caf7d;
-            --danger-color: #c0574f;
+            --bg-color: #121212;
+            --box-bg: #1e1e1e;
+            --circle-bg: #2a2a2a;
+            --input-bg: #121212;
+            --text-color: #ffffff;
+            --primary-color: #29b6f6;
+            --accent-color: #ffb74d;
+            --border-color: #3a3a3a;
         }
 
-        [data-theme="light"] {
-            --bg-color: #f2f1ed;
-            --box-bg: #ffffff;
-            --circle-bg: #e5e3dc;
-            --input-bg: #ffffff;
-            --text-color: #1d1d1f;
-            --primary-color: #b07350;
-            --accent-color: #7a756c;
-            --border-color: #d1cecf;
-            --success-color: #388e3c;
-            --danger-color: #d32f2f;
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            text-align: center; 
+            padding: 20px; 
+            margin: 0; 
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .container { display: inline-block; width: 100%; max-width: 340px; margin: 0 auto; }
+        .box { 
+            background: var(--box-bg); 
+            padding: 20px; 
+            border-radius: 20px; 
+            width: 100%; 
+            box-sizing: border-box; 
+            margin-top: 15px; 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.22); 
+            text-align: center; 
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
-        /* 視窗與元件動畫設定 */
-        * {
-            box-sizing: border-box;
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.2s ease, opacity 0.2s ease;
+        #auth-area { 
+            background: var(--box-bg); 
+            padding: 12px 20px; 
+            border-radius: 50px; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-width: 240px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+            margin-bottom: 10px; 
+            font-size: 13px; 
+            font-weight: bold; 
+            position: relative; 
+            overflow: hidden; 
+            transition: all 0.3s ease;
         }
+        .loading-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--primary-color); width: 0; transition: width 0.4s ease; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            text-align: center;
-            padding: 12px;
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
+        input { 
+            display: block; 
+            margin: 20px auto; 
+            padding: 14px; 
+            width: 85%; 
+            border-radius: 12px; 
+            border: 1px solid var(--border-color); 
+            background: var(--input-bg); 
+            color: var(--text-color); 
+            text-align: center; 
+            font-size: 1.4rem; 
+            letter-spacing: 4px; 
+            outline: none; 
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
-
-        .container {
-            width: 100%;
-            max-width: 380px;
-            margin: 0 auto;
-        }
-
-        /* 適度減少黑邊，保持高質感比例 */
-        .box {
-            background: var(--box-bg);
-            padding: 16px;
-            border-radius: 20px;
-            width: 100%;
-            margin-top: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-            text-align: center;
-            border: 1px solid var(--border-color);
-        }
-
-        .header-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        h1 {
-            font-size: 1.3rem;
-            margin: 0;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-
-        #auth-area {
-            background: var(--box-bg);
-            padding: 8px 14px;
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            margin-bottom: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        .loading-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 3px;
-            background: var(--primary-color);
-            width: 0;
-            transition: width 0.4s ease;
-        }
-
-        input {
-            display: block;
-            margin: 12px auto;
-            padding: 12px;
-            width: 90%;
-            border-radius: 12px;
-            border: 1.5px solid var(--border-color);
-            background: var(--input-bg);
-            color: var(--text-color);
-            text-align: center;
-            font-size: 1.4rem;
-            letter-spacing: 6px;
-            outline: none;
-        }
-        input:focus {
-            border-color: var(--primary-color);
-        }
-
-        button {
-            padding: 10px 18px;
-            cursor: pointer;
-            background: var(--primary-color);
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            margin: 4px;
-            color: #fff;
-            font-size: 0.9rem;
-        }
-        button:active {
-            transform: scale(0.97);
-            opacity: 0.9;
-        }
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-sub {
-            background: var(--circle-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-        }
-
-        .log-container {
-            margin-top: 14px;
-            text-align: left;
-            max-height: 180px;
-            overflow-y: auto;
-            border-top: 1px solid var(--border-color);
-            padding-top: 8px;
-        }
-        .log-item {
-            border-bottom: 1px solid var(--border-color);
-            padding: 8px 4px;
-            display: flex;
-            justify-content: space-between;
-            font-family: monospace;
-            font-size: 0.95rem;
-            animation: fadeIn 0.3s ease;
-        }
-        .log-item.success {
-            color: var(--success-color);
-            font-weight: bold;
-            background: rgba(76, 175, 125, 0.1);
-            border-radius: 6px;
-            padding: 8px;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 6px 12px;
-            background: var(--accent-color);
-            color: #fff;
-            font-weight: bold;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-top: 6px;
-            animation: popIn 0.3s ease;
-        }
-
-        #authError {
-            display: none;
-            font-size: 11px;
-            color: var(--danger-color);
-            margin-top: 4px;
-            text-align: center;
-            line-height: 1.4;
-        }
-
-        /* 計算紙小工具 */
-        .picker-title {
-            font-size: 0.8rem;
-            color: var(--accent-color);
-            margin: 10px 0 6px;
-        }
-        .number-picker {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
-            max-width: 300px;
-            margin: 0 auto;
-        }
-        .num-circle {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: var(--circle-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            font-size: 1rem;
-            font-weight: bold;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .num-circle.excluded {
-            opacity: 0.35;
-            text-decoration: line-through;
-        }
-        .num-circle.confirmed {
-            background: var(--success-color);
-            color: #fff;
-            border-color: var(--success-color);
-        }
-
-        #pickerLegend {
-            font-size: 0.7rem;
-            color: var(--accent-color);
-            margin-top: 6px;
-        }
-        #pickerClearBtn {
-            font-size: 0.75rem;
-            padding: 4px 10px;
-            margin-top: 4px;
-        }
-
-        #syncStatus {
-            font-size: 0.7rem;
-            color: var(--accent-color);
-            display: block;
-            margin-top: 2px;
-            min-height: 12px;
-        }
-
-        /* 子母視窗 (Picture-in-Picture) */
-        .pip-panel {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 260px;
-            max-height: 320px;
-            background: var(--box-bg);
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-            padding: 12px;
-            z-index: 1000;
-            border: 1.5px solid var(--primary-color);
-            animation: slideUp 0.3s ease;
-            overflow: hidden;
+        input:focus { 
+            border-color: var(--primary-color); 
+            box-shadow: 0 0 8px rgba(41, 182, 246, 0.4);
         }
         
-        body.pip-active .container {
-            display: none;
+        button { 
+            padding: 12px 24px; 
+            cursor: pointer; 
+            background: var(--primary-color); 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            margin: 5px; 
+            color: #fff; 
+            font-size: 1rem; 
+            transition: background-color 0.2s ease, transform 0.1s ease, opacity 0.2s ease; 
         }
-        body.pip-active .pip-panel {
-            display: block;
-            position: static;
-            width: 100%;
-            max-width: 380px;
-            max-height: none;
-            box-shadow: none;
-            border-radius: 20px;
-        }
+        button:hover { opacity: 0.9; }
+        button:active { transform: scale(0.97); opacity: 0.8; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        .pip-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: move;
-            margin-bottom: 8px;
-            font-weight: bold;
-            font-size: 0.85rem;
-            touch-action: none;
-            padding-bottom: 6px;
-            border-bottom: 1px solid var(--border-color);
+        .log-container { 
+            margin-top: 20px; 
+            text-align: left; 
+            max-height: 220px; 
+            overflow-y: auto; 
+            border-top: 1px solid var(--border-color); 
+            padding-top: 10px; 
         }
-        .pip-close {
-            background: var(--circle-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 0.7rem;
-            cursor: pointer;
-            padding: 2px 8px;
-            margin: 0;
+        .log-item { 
+            border-bottom: 1px solid var(--border-color); 
+            padding: 10px 5px; 
+            display: flex; 
+            justify-content: space-between; 
+            font-family: monospace; 
+            font-size: 1.05rem; 
+            opacity: 0; 
+            transform: translateY(-5px); 
+            animation: fadeIn 0.3s ease forwards;
         }
-
-        .owner-tag {
-            font-size: 0.7rem;
-            color: var(--accent-color);
-            margin-bottom: 8px;
-        }
-        .history-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.75rem;
-            text-align: left;
-        }
-        .history-empty {
-            font-size: 0.8rem;
-            color: var(--accent-color);
-            padding: 12px 0;
-        }
-
-        /* 動畫效果 */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-4px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        .log-item.success { color: #4caf7d; font-weight: bold; background: rgba(76, 175, 125, 0.12); border-radius: 6px; }
+
+        .badge { 
+            display: inline-block; 
+            padding: 6px 12px; 
+            background: var(--accent-color); 
+            color: #1a1a1a; 
+            font-weight: bold; 
+            border-radius: 8px; 
+            font-size: 0.9rem; 
+            margin-top: 8px; 
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         @keyframes popIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        .cloud-badge { font-size: 11px; color: #888; margin-left: 5px; }
+
+        #authError { display: none; font-size: 11px; color: #e07a6e; margin-top: 6px; max-width: 300px; text-align: center; line-height: 1.4; }
+
+        /* 計算紙小工具 */
+        .picker-title { font-size: 0.85rem; color: #999; margin: 14px 0 6px; }
+        .number-picker { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 280px; margin: 0 auto; }
+        .num-circle { 
+            width: 46px; 
+            height: 46px; 
+            border-radius: 50%; 
+            background: var(--circle-bg); 
+            color: var(--text-color); 
+            border: 1.5px solid var(--border-color); 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            padding: 0; 
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: all 0.2s ease;
         }
+        .num-circle.excluded { opacity: 0.5; text-decoration: line-through; background: #3a2222; }
+        .num-circle.confirmed { background: #4caf7d; color: #0b1f0d; border-color: #4caf7d; }
+        #pickerLegend { font-size: 0.72rem; color: #888; margin-top: 8px; }
+        #pickerClearBtn { background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); font-size: 0.8rem; padding: 6px 14px; margin-top: 6px; }
+
+        #syncStatus { font-size: 0.65rem; color: #888; display: block; margin-top: 4px; min-height: 12px; transition: color 0.3s ease; }
+
+        /* 子母浮動視窗 */
+        .pip-panel { 
+            display: none; 
+            position: fixed; 
+            top: 70px; 
+            right: 12px; 
+            width: 250px; 
+            max-height: 60vh; 
+            overflow-y: auto; 
+            background: var(--box-bg); 
+            border-radius: 16px; 
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4); 
+            padding: 14px; 
+            box-sizing: border-box; 
+            z-index: 60; 
+            border: 1px solid var(--border-color); 
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .pip-header { display: flex; justify-content: space-between; align-items: center; cursor: move; margin-bottom: 8px; font-weight: bold; font-size: 0.9rem; touch-action: none; }
+        .pip-close { background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.75rem; cursor: pointer; padding: 4px 10px; margin: 0; }
+        .owner-tag { font-size: 0.72rem; color: #999; margin-bottom: 10px; }
+        .history-item { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid var(--border-color); font-size: 0.8rem; text-align: left; }
+        .history-empty { font-size: 0.85rem; color: #777; padding: 16px 0; }
+        
+        /* 輔助按鈕群 */
+        .btn-sub { background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); font-size: 0.8rem; padding: 8px 14px; }
     </style>
 </head>
 <body>
+<div class="container">
 
-<div class="container" id="mainContainer">
-    <div class="header-bar">
-        <h1>1A2B 猜數字</h1>
-        <div>
-            <button class="btn-sub" id="pipBtn" style="font-size: 0.75rem; padding: 6px 10px;">子母模式</button>
-            <button class="btn-sub" id="themeToggleBtn" style="font-size: 0.75rem; padding: 6px 10px;">切換淺色</button>
-        </div>
-    </div>
+    <h1>1A2B 猜數字</h1>
 
     <div id="auth-area">
         <span id="status" style="color: var(--accent-color);">雲端連線初始化...</span>
-        <div>
-            <button id="loginBtn" style="padding: 4px 8px; font-size: 0.7rem; display: none;">綁定 Google</button>
-            <button id="switchAccBtn" class="btn-sub" style="padding: 4px 8px; font-size: 0.7rem; display: none;">切換帳號</button>
-            <button id="logoutBtn" class="btn-sub" style="padding: 4px 8px; font-size: 0.7rem; display: none;">登出</button>
-        </div>
+        <button id="loginBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: var(--primary-color); margin-left: 8px; border-radius: 20px;">綁定 Google</button>
+        <button id="switchBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: var(--accent-color); color: #000; margin-left: 8px; border-radius: 20px;">切換帳號</button>
+        <button id="logoutBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); margin-left: 6px; border-radius: 20px;">登出</button>
         <div id="loadBar" class="loading-bar"></div>
     </div>
     <div id="authError"></div>
 
     <div class="box">
-        <div id="hintMessage" style="color: var(--primary-color); font-weight: bold; min-height: 20px; font-size: 1rem;">遊戲準備中...</div>
+        <div id="hintMessage" style="color: var(--primary-color); font-weight: bold; min-height: 24px; font-size: 1.1rem; transition: color 0.3s;">遊戲準備中...</div>
         <span id="syncStatus"></span>
         <div id="badgeDisplay"></div>
 
         <input type="text" id="userGuess" maxlength="4" pattern="\d*" inputmode="numeric" placeholder="輸入4位不重複數字">
 
-        <div class="picker-title">計算紙（點擊切換標記）</div>
+        <div class="picker-title">計算紙（獨立筆記，不影響上方輸入，點擊切換標記）</div>
         <div class="number-picker" id="numberPicker">
             <button class="num-circle" data-num="0">0</button>
             <button class="num-circle" data-num="1">1</button>
@@ -393,29 +230,36 @@
             <button class="num-circle" data-num="8">8</button>
             <button class="num-circle" data-num="9">9</button>
         </div>
-        <div id="pickerLegend">灰=排除、綠=確定</div>
-        <button id="pickerClearBtn" class="btn-sub">清除標記</button>
+        <div id="pickerLegend">灰=排除、綠=確定在密碼裡</div>
+        <button id="pickerClearBtn">清除標記</button>
 
-        <div style="display: flex; justify-content: center; gap: 4px; margin-top: 10px;">
-            <button id="guessBtn" style="flex: 2;">猜測</button>
-            <button id="restartBtn" style="flex: 1; background: var(--danger-color);">重來</button>
+        <div style="display: flex; justify-content: center; gap: 5px;">
+            <button id="guessBtn" style="flex: 1;">猜測</button>
+            <button id="restartBtn" style="background:#c0574f; color:#fff;">重來</button>
         </div>
-        <button id="historyBtn" class="btn-sub" style="width: 100%; margin: 6px 0 0 0;">我的歷史紀錄</button>
+        
+        <div style="display: flex; justify-content: center; gap: 5px; margin-top: 5px;">
+            <button id="historyBtn" class="btn-sub" style="flex: 1;">我的紀錄</button>
+            <button id="pipToggleBtn" class="btn-sub" style="flex: 1;">開啟子母視窗</button>
+        </div>
 
         <div class="log-container" id="historyLogs"></div>
     </div>
+
 </div>
 
-<!-- 子母浮動視窗 / 歷史紀錄彈窗 -->
+<!-- 隱藏的 Canvas / Video 用於子母視窗畫中畫渲染 -->
+<canvas id="pipCanvas" width="300" height="300" style="display:none;"></canvas>
+<video id="pipVideo" autoplay playsinline muted style="display:none;"></video>
+
+<!-- 內建面板子母視窗 (備用拖曳介面) -->
 <div class="pip-panel" id="historyPanel">
     <div class="pip-header" id="pipHeader">
-        <span id="pipTitle">子母小視窗 / 歷史紀錄</span>
+        <span>我的紀錄</span>
         <button class="pip-close" id="historyCloseBtn">關閉</button>
     </div>
     <div class="owner-tag" id="historyOwnerTag"></div>
-    <div id="pipContent">
-        <div id="historyList"><div class="history-empty">載入中...</div></div>
-    </div>
+    <div id="historyList"><div class="history-empty">載入中...</div></div>
 </div>
 
 <script type="module">
@@ -448,34 +292,16 @@
     let lastLoadedUid = null;
     let historyEntries = [];
 
-    // --- 深淺色主題切換 ---
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    let currentTheme = 'dark';
-    function applyTheme(theme) {
-        if (theme === 'light') {
-            document.documentElement.setAttribute('data-theme', 'light');
-            themeToggleBtn.innerText = '切換深色';
-        } else {
-            document.documentElement.removeAttribute('data-theme');
-            themeToggleBtn.innerText = '切換淺色';
-        }
-    }
-    applyTheme(currentTheme);
-    themeToggleBtn.onclick = () => {
-        currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        applyTheme(currentTheme);
-    };
-
-    // --- 登入與帳號切換邏輯 ---
+    // --- 登入狀態UI控管 ---
     const statusText = document.getElementById('status');
     const loadBar = document.getElementById('loadBar');
     const loginBtn = document.getElementById('loginBtn');
+    const switchBtn = document.getElementById('switchBtn');
     const logoutBtn = document.getElementById('logoutBtn');
-    const switchAccBtn = document.getElementById('switchAccBtn');
     const authErrorBox = document.getElementById('authError');
 
     loadBar.style.width = '40%';
-    statusText.innerText = '檢查憑證中...';
+    statusText.innerText = '正在檢查玩家憑證...';
 
     function showAuthError(message) {
         authErrorBox.innerText = message;
@@ -493,7 +319,7 @@
         if (!user) {
             signInAnonymously(auth).catch((err) => {
                 console.error('匿名登入失敗:', err.code, err.message);
-                showAuthError('無法驗證身份，遊戲進度將僅儲存於本地。');
+                showAuthError('無法建立驗證身份，進度可能無法同步。');
                 updateUserUI(null);
             });
             return;
@@ -506,26 +332,26 @@
     function updateUserUI(user) {
         currentUser = user;
         if (user && !user.isAnonymous) {
-            statusText.innerText = `玩家：${user.displayName || '雲端玩家'}`;
-            statusText.style.color = "var(--success-color)";
+            statusText.innerText = `玩家：${user.displayName || '雲端高手'}`;
+            statusText.style.color = "#4caf7d";
             loginBtn.style.display = 'none';
-            switchAccBtn.style.display = 'inline-block';
+            switchBtn.style.display = 'inline-block';
             logoutBtn.style.display = 'inline-block';
         } else if (user && user.isAnonymous) {
-            statusText.innerText = "訪客模式";
+            statusText.innerText = "遊客模式（點擊綁定 Google）";
             statusText.style.color = "var(--accent-color)";
             loginBtn.style.display = 'inline-block';
             loginBtn.disabled = false;
             loginBtn.innerText = '綁定 Google';
-            switchAccBtn.style.display = 'none';
+            switchBtn.style.display = 'none';
             logoutBtn.style.display = 'none';
         } else {
             statusText.innerText = "未驗證";
-            statusText.style.color = "var(--danger-color)";
+            statusText.style.color = "#e07a6e";
             loginBtn.style.display = 'inline-block';
             loginBtn.disabled = false;
             loginBtn.innerText = '綁定 Google';
-            switchAccBtn.style.display = 'none';
+            switchBtn.style.display = 'none';
             logoutBtn.style.display = 'none';
         }
     }
@@ -533,13 +359,14 @@
     async function handleGoogleLogin() {
         clearAuthError();
         loginBtn.disabled = true;
+        loginBtn.innerText = '登入中...';
         try {
             provider.setCustomParameters({ prompt: 'select_account' });
             const result = await signInWithPopup(auth, provider);
             updateUserUI(result.user);
         } catch (err) {
             loginBtn.disabled = false;
-            console.error('Google 登入失敗:', err.code, err.message);
+            loginBtn.innerText = '綁定 Google';
             if (err.code !== 'auth/popup-closed-by-user') {
                 showAuthError(`登入失敗：${err.message}`);
             }
@@ -547,13 +374,13 @@
     }
 
     loginBtn.onclick = handleGoogleLogin;
-    switchAccBtn.onclick = handleGoogleLogin;
+    switchBtn.onclick = handleGoogleLogin;
 
     logoutBtn.onclick = async () => {
         await signOut(auth);
     };
 
-    // --- 每一步時時同步至雲端（防止重載遊戲重置） ---
+    // --- 進度即時同步與復原 ---
     async function ensureGameLoadedFor(user) {
         if (!user || lastLoadedUid === user.uid) return;
         lastLoadedUid = user.uid;
@@ -564,7 +391,7 @@
                 return;
             }
         } catch (err) {
-            console.warn('讀取進度失敗:', err.code || err.message);
+            console.warn('讀取進度失敗，開新局:', err.code || err.message);
         }
         restartGame();
     }
@@ -575,28 +402,20 @@
         gameActive = true;
         historyEntries = Array.isArray(state.historyEntries) ? state.historyEntries : [];
 
-        if (state.digitState) {
-            Object.assign(digitState, state.digitState);
-            numCircles.forEach(btn => {
-                const n = btn.dataset.num;
-                btn.classList.remove('excluded', 'confirmed');
-                if (digitState[n]) btn.classList.add(digitState[n]);
-            });
-        }
-
         document.getElementById('badgeDisplay').innerHTML = '';
-        document.getElementById('hintMessage').innerText = state.hintMessage || '遊戲進度已還原！';
+        document.getElementById('hintMessage').innerText = state.hintMessage || '進度已還原，請繼續猜！';
         document.getElementById('userGuess').value = '';
         renderHistoryLogs();
+        updatePipCanvas();
     }
 
     function renderHistoryLogs() {
         const logBox = document.getElementById('historyLogs');
         logBox.innerHTML = historyEntries.map(e => {
             if (e.success) {
-                return `<div class="log-item success"><span>第 ${e.n} 次：${e.g} (完全正確)</span><span>${e.a}A${e.b}B</span></div>`;
+                return `<div class="log-item success"><span>第 ${e.n} 次猜測：${e.g}（完全正確）</span><span>${e.a}A${e.b}B</span></div>`;
             }
-            return `<div class="log-item"><span>第 ${e.n} 次：${e.g}</span><span>${e.a}A${e.b}B</span></div>`;
+            return `<div class="log-item"><span>第 ${e.n} 次猜測：${e.g}</span><span>${e.a}A${e.b}B</span></div>`;
         }).join('');
     }
 
@@ -605,23 +424,17 @@
         const syncStatus = document.getElementById('syncStatus');
         if (syncStatus) syncStatus.innerText = '同步中...';
         const hint = document.getElementById('hintMessage').innerText;
-        
         set(ref(db, `game_state/${currentUser.uid}`), {
-            answer, 
-            guessCount, 
-            gameActive, 
-            historyEntries, 
-            digitState,
-            hintMessage: hint
+            answer, guessCount, gameActive, historyEntries, hintMessage: hint
         }).then(() => {
-            if (syncStatus) syncStatus.innerText = '進度已即時同步';
+            if (syncStatus) syncStatus.innerText = '已同步';
         }).catch((err) => {
-            console.warn('同步失敗:', err.code || err.message);
-            if (syncStatus) syncStatus.innerText = '同步未完成';
+            console.warn('同步進度失敗:', err.code || err.message);
+            if (syncStatus) syncStatus.innerText = `同步失敗（${err.code || '未知錯誤'}）`;
         });
     }
 
-    // --- 計算紙小工具（點擊狀態同步上傳） ---
+    // --- 計算紙小工具 ---
     const numCircles = document.querySelectorAll('.num-circle');
     const digitState = {};
 
@@ -637,8 +450,6 @@
             if (next) digitState[n] = next; else delete digitState[n];
             btn.classList.remove('excluded', 'confirmed');
             if (next) btn.classList.add(next);
-
-            syncGameState(); // 每步上傳計算紙狀態
         });
     });
 
@@ -647,38 +458,73 @@
             btn.classList.remove('excluded', 'confirmed');
             delete digitState[btn.dataset.num];
         });
-        syncGameState();
     });
 
-    // --- 子母模式與歷史紀錄彈窗 ---
-    const pipBtn = document.getElementById('pipBtn');
+    // --- 子母界面 Picture-in-Picture (畫中畫) 功能 ---
+    const pipCanvas = document.getElementById('pipCanvas');
+    const pipVideo = document.getElementById('pipVideo');
+    const pipToggleBtn = document.getElementById('pipToggleBtn');
+
+    function updatePipCanvas() {
+        const ctx = pipCanvas.getContext('2d');
+        ctx.fillStyle = '#1e1e1e';
+        ctx.fillRect(0, 0, 300, 300);
+
+        ctx.fillStyle = '#29b6f6';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillText('1A2B 猜數字紀錄', 15, 30);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '14px monospace';
+        let y = 65;
+
+        if (historyEntries.length === 0) {
+            ctx.fillStyle = '#888888';
+            ctx.fillText('尚無猜測紀錄...', 15, y);
+        } else {
+            const recent = historyEntries.slice(0, 8);
+            recent.forEach(e => {
+                ctx.fillStyle = e.success ? '#4caf7d' : '#ffffff';
+                ctx.fillText(`#${e.n} [ ${e.g} ]  ->  ${e.a}A${e.b}B`, 15, y);
+                y += 28;
+            });
+        }
+    }
+
+    pipToggleBtn.addEventListener('click', async () => {
+        if (document.pictureInPictureElement) {
+            await document.exitPictureInPicture();
+            return;
+        }
+
+        try {
+            updatePipCanvas();
+            const stream = pipCanvas.captureStream(10);
+            pipVideo.srcObject = stream;
+            await pipVideo.play();
+            await pipVideo.requestPictureInPicture();
+        } catch (err) {
+            console.warn("系統畫中畫受限，切換為內建浮動面板:", err);
+            toggleHistoryPanel();
+        }
+    });
+
+    // --- 舊版浮動視窗備用 ---
     const historyBtn = document.getElementById('historyBtn');
     const historyPanel = document.getElementById('historyPanel');
     const historyList = document.getElementById('historyList');
     const historyOwnerTag = document.getElementById('historyOwnerTag');
     const pipHeader = document.getElementById('pipHeader');
-    const pipTitle = document.getElementById('pipTitle');
 
-    // 子母模式切換
-    pipBtn.addEventListener('click', () => {
-        historyPanel.style.display = 'block';
-        pipTitle.innerText = '子母小視窗';
-        document.getElementById('pipContent').innerHTML = `
-            <div style="font-size:0.8rem; text-align:center; padding:10px 0;">
-                <div>目前猜測進度：第 ${guessCount} 次</div>
-                <div style="margin-top:6px; font-weight:bold; color:var(--primary-color);">
-                    ${document.getElementById('hintMessage').innerText}
-                </div>
-            </div>
-        `;
-    });
+    function toggleHistoryPanel() {
+        if (historyPanel.style.display === 'block') {
+            historyPanel.style.display = 'none';
+        } else {
+            openHistory();
+        }
+    }
 
-    historyBtn.addEventListener('click', () => {
-        pipTitle.innerText = '歷史紀錄';
-        document.getElementById('pipContent').innerHTML = '<div id="historyList"><div class="history-empty">載入中...</div></div>';
-        openHistory();
-    });
-
+    historyBtn.addEventListener('click', toggleHistoryPanel);
     document.getElementById('historyCloseBtn').addEventListener('click', () => {
         historyPanel.style.display = 'none';
     });
@@ -686,32 +532,30 @@
     async function openHistory() {
         if (!currentUser) return;
         historyPanel.style.display = 'block';
-        const listEl = document.getElementById('historyList');
-        if (!listEl) return;
-
+        historyList.innerHTML = '<div class="history-empty">載入中...</div>';
         historyOwnerTag.innerText = (!currentUser.isAnonymous)
-            ? `玩家：${currentUser.displayName || '雲端玩家'}`
-            : '玩家：訪客';
+            ? `身份：${currentUser.displayName || '雲端高手'}`
+            : '身份：訪客（此裝置專屬）';
 
         try {
             const snap = await get(ref(db, `scores/${currentUser.uid}`));
             if (!snap.exists()) {
-                listEl.innerHTML = '<div class="history-empty">無歷史戰績</div>';
+                historyList.innerHTML = '<div class="history-empty">還沒有任何紀錄</div>';
                 return;
             }
             const records = Object.values(snap.val()).sort((a, b) => (b.time > a.time ? 1 : -1));
-            listEl.innerHTML = records.map(r => `
+            historyList.innerHTML = records.map(r => `
                 <div class="history-item">
                     <span>${r.time}</span>
-                    <span>${r.guesses} 次 · ${r.badge}</span>
+                    <span>${r.guesses} 次．${r.badge}</span>
                 </div>
             `).join('');
         } catch (err) {
-            listEl.innerHTML = `<div class="history-empty">載入失敗</div>`;
+            historyList.innerHTML = `<div class="history-empty">讀取失敗：${err.code || err.message}</div>`;
         }
     }
 
-    // 拖曳子母視窗
+    // 拖曳功能
     (function enableDrag(handle, panel) {
         let dragging = false, offsetX = 0, offsetY = 0;
         handle.addEventListener('pointerdown', (e) => {
@@ -720,7 +564,6 @@
             offsetX = e.clientX - rect.left;
             offsetY = e.clientY - rect.top;
             panel.style.right = 'auto';
-            panel.style.bottom = 'auto';
             handle.setPointerCapture(e.pointerId);
         });
         handle.addEventListener('pointermove', (e) => {
@@ -731,7 +574,7 @@
         ['pointerup', 'pointercancel'].forEach(ev => handle.addEventListener(ev, () => { dragging = false; }));
     })(pipHeader, historyPanel);
 
-    // --- 遊戲核心邏輯 ---
+    // --- 1A2B 核心邏輯 ---
     function restartGame() {
         let nums = ['0','1','2','3','4','5','6','7','8','9'];
         for (let i = nums.length - 1; i > 0; i--) {
@@ -745,23 +588,24 @@
 
         document.getElementById('historyLogs').innerHTML = '';
         document.getElementById('badgeDisplay').innerHTML = '';
-        document.getElementById('hintMessage').innerText = '新遊戲開始，請輸入 4 位數';
+        document.getElementById('hintMessage').innerText = '新遊戲開始，請輸入 4 位數！';
         document.getElementById('userGuess').value = '';
         numCircles.forEach(btn => btn.classList.remove('excluded', 'confirmed'));
         Object.keys(digitState).forEach(k => delete digitState[k]);
 
         syncGameState();
+        updatePipCanvas();
     }
 
     async function checkGuess() {
         if (!gameActive) {
-            alert('本局已結束，請點擊「重來」開始新一局。');
+            alert('本局已結束！請點擊「重來」開啟新一局。');
             return;
         }
 
         let g = document.getElementById('userGuess').value.trim();
         if (!/^\d{4}$/.test(g) || new Set(g).size !== 4) {
-            alert('請輸入 4 位不重複的數字');
+            alert('請輸入 4 位不重複的純數字！');
             return;
         }
 
@@ -778,24 +622,25 @@
         if (success) {
             gameActive = false;
 
-            let badgeName = "完成挑戰";
-            if (guessCount <= 4) badgeName = "大師";
-            else if (guessCount <= 7) badgeName = "專家";
+            let badgeName = "數字平民";
+            if (guessCount <= 4) badgeName = "1A2B 頂級神算";
+            else if (guessCount <= 7) badgeName = "數字專家";
 
             document.getElementById('hintMessage').innerText = `答對了！共花了 ${guessCount} 次猜測`;
-            document.getElementById('badgeDisplay').innerHTML = `<span class="badge">獲得稱號：${badgeName}</span>`;
+            document.getElementById('badgeDisplay').innerHTML = `<span class="badge">解鎖榮譽：${badgeName}</span>`;
             renderHistoryLogs();
             syncGameState();
 
             const recordId = "score_" + Date.now();
             const recordData = {
-                player: (currentUser && !currentUser.isAnonymous) ? (currentUser.displayName || "玩家") : "訪客",
+                player: (currentUser && !currentUser.isAnonymous) ? (currentUser.displayName || "雲端挑戰者") : "在地遊客",
                 guesses: guessCount,
                 badge: badgeName,
-                time: new Date().toLocaleDateString()
+                time: new Date().toLocaleString()
             };
             if (currentUser) {
-                set(ref(db, `scores/${currentUser.uid}/${recordId}`), recordData);
+                set(ref(db, `scores/${currentUser.uid}/${recordId}`), recordData)
+                    .catch((err) => { console.warn('分數紀錄寫入失敗:', err.code || err.message); });
             }
         } else {
             document.getElementById('hintMessage').innerText = `上次結果：${a}A${b}B`;
@@ -803,6 +648,7 @@
             syncGameState();
         }
 
+        updatePipCanvas();
         document.getElementById('userGuess').value = '';
     }
 
