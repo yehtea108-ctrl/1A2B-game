@@ -66,6 +66,8 @@
         #pickerLegend { font-size: 0.72rem; color: #777; margin-top: 8px; }
         #pickerClearBtn { background: #555; color: #fff; font-size: 0.8rem; padding: 6px 14px; margin-top: 6px; }
 
+        #syncStatus { font-size: 0.65rem; color: #888; display: block; margin-top: 4px; min-height: 12px; }
+
         /* 歷史紀錄面板（依身份分開） */
         #historyPanelBackdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; align-items: flex-end; justify-content: center; }
         #historyPanel { background: var(--box-bg); width: 100%; max-width: 340px; max-height: 70vh; overflow-y: auto; border-radius: 20px 20px 0 0; padding: 18px; box-sizing: border-box; }
@@ -75,6 +77,14 @@
         .history-empty { font-size: 0.85rem; color: #777; padding: 20px 0; }
         #historyCloseBtn { width: 100%; margin-top: 10px; background: #555; color: #fff; }
         #historyBtn { background: #37474f; color: #fff; font-size: 0.8rem; padding: 8px 16px; }
+
+        /* 玩法說明面板（沿用跟歷史紀錄一樣的底部彈出樣式） */
+        #rulesPanelBackdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; align-items: flex-end; justify-content: center; }
+        #rulesPanel { background: var(--box-bg); width: 100%; max-width: 340px; max-height: 70vh; overflow-y: auto; border-radius: 20px 20px 0 0; padding: 18px; box-sizing: border-box; text-align: left; line-height: 1.7; font-size: 0.88rem; }
+        #rulesPanel h3 { margin: 0 0 10px; font-size: 1rem; text-align: center; }
+        #rulesPanel p { margin: 4px 0 12px; }
+        #rulesPanel b { color: var(--primary-color); }
+        #rulesCloseBtn { width: 100%; margin-top: 10px; background: #555; color: #fff; }
     </style>
 </head>
 <body>
@@ -86,6 +96,7 @@
         <button class="theme-btn" id="theme-dark">深色模式</button>
         <button class="theme-btn" id="theme-green" style="background:#142219; color:#4db6ac;">極光綠</button>
         <button class="theme-btn" id="theme-cyber" style="background:#2d0059; color:#ff007f;">賽博朋克</button>
+        <button class="theme-btn" id="rulesBtn" style="background:#455a64;">❓ 玩法說明</button>
     </div>
 
     <div id="auth-area">
@@ -98,6 +109,7 @@
 
     <div class="box">
         <div id="hintMessage" style="color: var(--primary-color); font-weight: bold; min-height: 24px; font-size: 1.1rem;">遊戲準備中...</div>
+        <span id="syncStatus"></span>
         <div id="badgeDisplay"></div>
         
         <input type="text" id="userGuess" maxlength="4" pattern="\d*" inputmode="numeric" placeholder="輸入4位不重複數字">
@@ -138,6 +150,17 @@
     </div>
 </div>
 
+<div id="rulesPanelBackdrop">
+    <div id="rulesPanel">
+        <h3>❓ 玩法說明</h3>
+        <p><b>🎯 目標</b><br>電腦會隨機產生一組 4 位「不重複」的數字（0～9）。在輸入框打入你猜的 4 位數，按「猜測」或 Enter 送出。</p>
+        <p><b>📊 幾A幾B</b><br>A：數字和位置都猜對的個數。<br>B：數字有猜對，但位置不對的個數。<br>猜到 4A（完全正確）就算過關，次數越少代表越厲害！</p>
+        <p><b>🧮 計算紙</b><br>畫面下方的數字圓圈是給自己做筆記用的：點一下＝排除（灰），再點一下＝確定在密碼裡（綠），不會影響到你實際輸入的猜測。</p>
+        <p><b>☁️ 進度同步</b><br>每猜一次都會即時同步到雲端，重新整理頁面或離開再回來都能自動接續，不會被重置。答對後的成績會另外存到「我的紀錄」，只有你自己看得到。</p>
+        <button id="rulesCloseBtn">關閉</button>
+    </div>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import {
@@ -167,6 +190,8 @@
     let guessCount = 0;
     let gameActive = true;
     let currentUser = null;
+    let lastLoadedUid = null;
+    let historyEntries = []; // newest-first，跟畫面上的猜測紀錄同步，用於雲端還原
 
     // --- 主題切換功能 ---
     document.getElementById('theme-dark').onclick = () => document.documentElement.removeAttribute('data-theme');
@@ -179,6 +204,7 @@
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const authErrorBox = document.getElementById('authError');
+    const syncStatusEl = document.getElementById('syncStatus');
 
     loadBar.style.width = '40%';
     statusText.innerText = '正在檢查玩家憑證...';
@@ -193,7 +219,7 @@
     }
 
     // 監聽登入狀態（初次載入就會觸發一次，不需要另外處理 redirect 結果）
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         loadBar.style.width = '100%';
         setTimeout(() => { loadBar.style.display = 'none'; }, 300);
 
@@ -209,6 +235,7 @@
         }
 
         updateUserUI(user);
+        await ensureGameLoadedFor(user);
     });
 
     function updateUserUI(user) {
@@ -270,6 +297,59 @@
     logoutBtn.onclick = async () => {
         await signOut(auth);
     };
+
+    // --- 進度即時同步：每一步都上傳到 game_state/{uid}，避免網頁重載被重置遊戲 ---
+    async function ensureGameLoadedFor(user) {
+        if (!user || lastLoadedUid === user.uid) return;
+        lastLoadedUid = user.uid;
+        try {
+            const snap = await get(ref(db, `game_state/${user.uid}`));
+            if (snap.exists() && snap.val().gameActive) {
+                restoreGame(snap.val());
+                return;
+            }
+        } catch (err) {
+            console.warn('讀取進度失敗，開新局:', err.code || err.message);
+        }
+        restartGame();
+    }
+
+    function restoreGame(state) {
+        answer = state.answer;
+        guessCount = state.guessCount || 0;
+        gameActive = true;
+        historyEntries = Array.isArray(state.historyEntries) ? state.historyEntries : [];
+
+        let logBox = document.getElementById('historyLogs');
+        logBox.innerHTML = '';
+        historyEntries.slice().reverse().forEach(e => {
+            if (e.success) {
+                logBox.innerHTML = `<div class="log-item success"><span>#${e.n} 猜測：${e.g} (完全正確)</span><span>${e.a}A${e.b}B 🏆</span></div>` + logBox.innerHTML;
+            } else {
+                logBox.innerHTML = `<div class="log-item"><span>#${e.n} 猜測：${e.g}</span><span>${e.a}A${e.b}B</span></div>` + logBox.innerHTML;
+            }
+        });
+
+        document.getElementById('badgeDisplay').innerHTML = '';
+        document.getElementById('hintMessage').innerText = state.hintMessage || '📥 已還原進度，繼續挑戰！';
+        document.getElementById('userGuess').value = '';
+        document.querySelectorAll('.num-circle').forEach(btn => btn.classList.remove('excluded', 'confirmed'));
+        Object.keys(digitState).forEach(k => delete digitState[k]);
+    }
+
+    function syncGameState() {
+        if (!currentUser) return;
+        if (syncStatusEl) syncStatusEl.innerText = '同步中...';
+        const hint = document.getElementById('hintMessage').innerText;
+        set(ref(db, `game_state/${currentUser.uid}`), {
+            answer, guessCount, gameActive, historyEntries, hintMessage: hint
+        }).then(() => {
+            if (syncStatusEl) syncStatusEl.innerText = '已同步';
+        }).catch((err) => {
+            console.warn('進度同步失敗:', err.code || err.message);
+            if (syncStatusEl) syncStatusEl.innerText = `同步失敗（${err.code || '未知錯誤'}）`;
+        });
+    }
 
     // --- 計算紙小工具：純粹讓玩家自己標記線索用，完全獨立於猜測輸入框 ---
     // 每個數字有三種狀態循環：一般 → 排除(灰) → 確定在密碼裡(綠) → 一般
@@ -345,6 +425,17 @@
         if (e.target === historyBackdrop) historyBackdrop.style.display = 'none';
     });
 
+    // --- 玩法說明面板 ---
+    const rulesBtn = document.getElementById('rulesBtn');
+    const rulesBackdrop = document.getElementById('rulesPanelBackdrop');
+    rulesBtn.addEventListener('click', () => { rulesBackdrop.style.display = 'flex'; });
+    document.getElementById('rulesCloseBtn').addEventListener('click', () => {
+        rulesBackdrop.style.display = 'none';
+    });
+    rulesBackdrop.addEventListener('click', (e) => {
+        if (e.target === rulesBackdrop) rulesBackdrop.style.display = 'none';
+    });
+
     // --- 1A2B 遊戲核心邏輯：重來才清空紀錄，答對時不清空 ---
     function restartGame() {
         let nums = ['0','1','2','3','4','5','6','7','8','9'];
@@ -356,6 +447,7 @@
         answer = nums.slice(0, 4).join('');
         guessCount = 0;
         gameActive = true;
+        historyEntries = [];
         
         // 重來時清空畫面，重新發牌
         document.getElementById('historyLogs').innerHTML = '';
@@ -365,6 +457,8 @@
         // 新一局的密碼不同，之前的計算紙標記已不適用，一併清空
         document.querySelectorAll('.num-circle').forEach(btn => btn.classList.remove('excluded', 'confirmed'));
         Object.keys(digitState).forEach(k => delete digitState[k]);
+
+        syncGameState();
     }
 
     async function checkGuess() {
@@ -385,10 +479,13 @@
             if(g[i] === answer[i]) a++;
             else if(answer.includes(g[i])) b++;
         }
+
+        const success = (a === 4);
+        historyEntries.unshift({ n: guessCount, g, a, b, success });
         
         let logBox = document.getElementById('historyLogs');
         
-        if(a === 4) {
+        if(success) {
             gameActive = false; // 鎖定目前畫面的數字輸入
             
             let badgeName = "🥉 數字平民";
@@ -403,6 +500,8 @@
 
             const cloudTag = document.getElementById('cloudTag');
             cloudTag.style.display = 'inline-block';
+
+            syncGameState();
 
             // 準備寫入雲端 —— 依照使用者 UID 分開存放，讓每個人只存取自己的紀錄
             const recordId = "score_" + Date.now();
@@ -437,6 +536,7 @@
         } else {
             document.getElementById('hintMessage').innerText = `上次結果: ${a}A${b}B`;
             logBox.innerHTML = `<div class="log-item"><span>#${guessCount} 猜測：${g}</span><span>${a}A${b}B</span></div>` + logBox.innerHTML;
+            syncGameState();
         }
         
         document.getElementById('userGuess').value = '';
@@ -448,9 +548,6 @@
     document.getElementById('userGuess').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') checkGuess();
     });
-
-    // 初始化啟動第一局
-    restartGame();
 </script>
 </body>
 </html>
