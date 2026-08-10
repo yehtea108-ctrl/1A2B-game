@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>1A2B 猜數字</title>
-    <!-- 網頁圖示與 Open Graph 縮圖 -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231e1e1e'/%3E%3Ctext x='50' y='62' font-family='Arial' font-weight='700' font-size='30' fill='%2329b6f6' text-anchor='middle'%3E1A2B%3C/text%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23f5f0e6'/%3E%3Ctext x='50' y='62' font-family='Arial' font-weight='700' font-size='30' fill='%232c3e50' text-anchor='middle'%3E1A2B%3C/text%3E%3C/svg%3E">
     <meta property="og:title" content="1A2B 猜數字">
     <meta property="og:description" content="經典猜數字邏輯遊戲，支援雲端同步與跨裝置紀錄">
-    <meta property="og:image" content="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23121212'/%3E%3Crect x='50' y='50' width='300' height='300' rx='40' fill='%231e1e1e'/%3E%3Ctext x='200' y='230' font-family='Arial' font-weight='700' font-size='90' fill='%2329b6f6' text-anchor='middle'%3E1A2B%3C/text%3E%3C/svg%3E">
-    
+    <meta property="og:image" content="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f5f0e6'/%3E%3Ctext x='200' y='230' font-family='Arial' font-weight='700' font-size='90' fill='%232c3e50' text-anchor='middle'%3E1A2B%3C/text%3E%3C/svg%3E">
     <style>
         :root {
             --bg-color: #121212;
@@ -21,179 +19,61 @@
             --accent-color: #ffb74d;
             --border-color: #3a3a3a;
         }
-
-        body { 
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            text-align: center; 
-            padding: 20px; 
-            margin: 0; 
-            transition: background-color 0.3s ease, color 0.3s ease;
+        [data-theme="light"] {
+            --bg-color: #f5f0e6;
+            --box-bg: #ffffff;
+            --circle-bg: #eee6d3;
+            --input-bg: #ffffff;
+            --text-color: #2c3e50;
+            --primary-color: #2c3e50;
+            --accent-color: #c9822f;
+            --border-color: #d8cdb8;
         }
+
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: -apple-system, sans-serif; text-align: center; padding: 20px; transition: all 0.3s ease; margin: 0; }
         .container { display: inline-block; width: 100%; max-width: 340px; margin: 0 auto; }
-        .box { 
-            background: var(--box-bg); 
-            padding: 20px; 
-            border-radius: 20px; 
-            width: 100%; 
-            box-sizing: border-box; 
-            margin-top: 15px; 
-            box-shadow: 0 8px 25px rgba(0,0,0,0.22); 
-            text-align: center; 
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
+        .box { background: var(--box-bg); padding: 20px; border-radius: 20px; width: 100%; box-sizing: border-box; margin-top: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.22); text-align: center; }
 
-        #auth-area { 
-            background: var(--box-bg); 
-            padding: 12px 20px; 
-            border-radius: 50px; 
-            display: inline-flex; 
-            align-items: center; 
-            justify-content: center; 
-            min-width: 240px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-            margin-bottom: 10px; 
-            font-size: 13px; 
-            font-weight: bold; 
-            position: relative; 
-            overflow: hidden; 
-            transition: all 0.3s ease;
-        }
+        #auth-area { background: var(--box-bg); padding: 12px 20px; border-radius: 50px; display: inline-flex; align-items: center; justify-content: center; min-width: 240px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); margin-bottom: 10px; font-size: 13px; font-weight: bold; position: relative; overflow: hidden; }
         .loading-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--primary-color); width: 0; transition: width 0.4s ease; }
 
-        input { 
-            display: block; 
-            margin: 20px auto; 
-            padding: 14px; 
-            width: 85%; 
-            border-radius: 12px; 
-            border: 1px solid var(--border-color); 
-            background: var(--input-bg); 
-            color: var(--text-color); 
-            text-align: center; 
-            font-size: 1.4rem; 
-            letter-spacing: 4px; 
-            outline: none; 
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        input:focus { 
-            border-color: var(--primary-color); 
-            box-shadow: 0 0 8px rgba(41, 182, 246, 0.4);
-        }
-        
-        button { 
-            padding: 12px 24px; 
-            cursor: pointer; 
-            background: var(--primary-color); 
-            border: none; 
-            border-radius: 12px; 
-            font-weight: bold; 
-            margin: 5px; 
-            color: #fff; 
-            font-size: 1rem; 
-            transition: background-color 0.2s ease, transform 0.1s ease, opacity 0.2s ease; 
-        }
-        button:hover { opacity: 0.9; }
-        button:active { transform: scale(0.97); opacity: 0.8; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        input { display: block; margin: 20px auto; padding: 14px; width: 85%; border-radius: 12px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color); text-align: center; font-size: 1.4rem; letter-spacing: 4px; outline: none; }
+        input:focus { border-color: var(--primary-color); }
+        button { padding: 12px 24px; cursor: pointer; background: var(--primary-color); border: none; border-radius: 12px; font-weight: bold; margin: 5px; color: #fff; font-size: 1rem; transition: opacity 0.1s; }
+        [data-theme="light"] button { color: #fff; }
+        button:active { opacity: 0.8; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .log-container { 
-            margin-top: 20px; 
-            text-align: left; 
-            max-height: 220px; 
-            overflow-y: auto; 
-            border-top: 1px solid var(--border-color); 
-            padding-top: 10px; 
-        }
-        .log-item { 
-            border-bottom: 1px solid var(--border-color); 
-            padding: 10px 5px; 
-            display: flex; 
-            justify-content: space-between; 
-            font-family: monospace; 
-            font-size: 1.05rem; 
-            opacity: 0; 
-            transform: translateY(-5px); 
-            animation: fadeIn 0.3s ease forwards;
-        }
-        @keyframes fadeIn {
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .log-container { margin-top: 20px; text-align: left; max-height: 220px; overflow-y: auto; border-top: 1px solid var(--border-color); padding-top: 10px; }
+        .log-item { border-bottom: 1px solid var(--border-color); padding: 10px 5px; display: flex; justify-content: space-between; font-family: monospace; font-size: 1.05rem; }
         .log-item.success { color: #4caf7d; font-weight: bold; background: rgba(76, 175, 125, 0.12); border-radius: 6px; }
 
-        .badge { 
-            display: inline-block; 
-            padding: 6px 12px; 
-            background: var(--accent-color); 
-            color: #1a1a1a; 
-            font-weight: bold; 
-            border-radius: 8px; 
-            font-size: 0.9rem; 
-            margin-top: 8px; 
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes popIn {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        .badge { display: inline-block; padding: 6px 12px; background: var(--accent-color); color: #1a1a1a; font-weight: bold; border-radius: 8px; font-size: 0.9rem; margin-top: 8px; }
+        .theme-toggle-btn { padding: 8px 18px; font-size: 0.85rem; background: var(--box-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 20px; cursor: pointer; font-weight: bold; }
 
         .cloud-badge { font-size: 11px; color: #888; margin-left: 5px; }
 
         #authError { display: none; font-size: 11px; color: #e07a6e; margin-top: 6px; max-width: 300px; text-align: center; line-height: 1.4; }
 
-        /* 計算紙小工具 */
+        /* 計算紙小工具（獨立筆記，不影響上方輸入） */
         .picker-title { font-size: 0.85rem; color: #999; margin: 14px 0 6px; }
         .number-picker { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 280px; margin: 0 auto; }
-        .num-circle { 
-            width: 46px; 
-            height: 46px; 
-            border-radius: 50%; 
-            background: var(--circle-bg); 
-            color: var(--text-color); 
-            border: 1.5px solid var(--border-color); 
-            font-size: 1.1rem; 
-            font-weight: bold; 
-            padding: 0; 
-            margin: 0; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            transition: all 0.2s ease;
-        }
-        .num-circle.excluded { opacity: 0.5; text-decoration: line-through; background: #3a2222; }
+        .num-circle { width: 46px; height: 46px; border-radius: 50%; background: var(--circle-bg); color: var(--text-color); border: 1.5px solid var(--border-color); font-size: 1.1rem; font-weight: bold; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; }
+        .num-circle.excluded { opacity: 0.5; text-decoration: line-through; }
         .num-circle.confirmed { background: #4caf7d; color: #0b1f0d; border-color: #4caf7d; }
         #pickerLegend { font-size: 0.72rem; color: #888; margin-top: 8px; }
         #pickerClearBtn { background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); font-size: 0.8rem; padding: 6px 14px; margin-top: 6px; }
 
-        #syncStatus { font-size: 0.65rem; color: #888; display: block; margin-top: 4px; min-height: 12px; transition: color 0.3s ease; }
+        #syncStatus { font-size: 0.65rem; color: #888; display: block; margin-top: 4px; min-height: 12px; }
 
-        /* 子母浮動視窗 */
-        .pip-panel { 
-            display: none; 
-            position: fixed; 
-            top: 70px; 
-            right: 12px; 
-            width: 250px; 
-            max-height: 60vh; 
-            overflow-y: auto; 
-            background: var(--box-bg); 
-            border-radius: 16px; 
-            box-shadow: 0 6px 20px rgba(0,0,0,0.4); 
-            padding: 14px; 
-            box-sizing: border-box; 
-            z-index: 60; 
-            border: 1px solid var(--border-color); 
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
+        /* 子母浮動視窗（不遮擋主畫面，可直接拖曳移動） */
+        .pip-panel { display: none; position: fixed; top: 70px; right: 12px; width: 250px; max-height: 60vh; overflow-y: auto; background: var(--box-bg); border-radius: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.22); padding: 14px; box-sizing: border-box; z-index: 60; border: 1px solid var(--border-color); }
         .pip-header { display: flex; justify-content: space-between; align-items: center; cursor: move; margin-bottom: 8px; font-weight: bold; font-size: 0.9rem; touch-action: none; }
         .pip-close { background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.75rem; cursor: pointer; padding: 4px 10px; margin: 0; }
         .owner-tag { font-size: 0.72rem; color: #999; margin-bottom: 10px; }
         .history-item { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid var(--border-color); font-size: 0.8rem; text-align: left; }
         .history-empty { font-size: 0.85rem; color: #777; padding: 16px 0; }
-        
-        /* 輔助按鈕群 */
-        .btn-sub { background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); font-size: 0.8rem; padding: 8px 14px; }
+        #historyBtn { background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); font-size: 0.8rem; padding: 8px 16px; }
     </style>
 </head>
 <body>
@@ -201,17 +81,20 @@
 
     <h1>1A2B 猜數字</h1>
 
+    <div style="margin-bottom: 15px;">
+        <button class="theme-toggle-btn" id="themeToggleBtn">切換淺色</button>
+    </div>
+
     <div id="auth-area">
         <span id="status" style="color: var(--accent-color);">雲端連線初始化...</span>
-        <button id="loginBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: var(--primary-color); margin-left: 8px; border-radius: 20px;">綁定 Google</button>
-        <button id="switchBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: var(--accent-color); color: #000; margin-left: 8px; border-radius: 20px;">切換帳號</button>
-        <button id="logoutBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); margin-left: 6px; border-radius: 20px;">登出</button>
+        <button id="loginBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: var(--primary-color); margin-left: 10px; border-radius: 20px;">綁定 Google</button>
+        <button id="logoutBtn" style="padding: 4px 10px; font-size: 0.75rem; display: none; background: var(--circle-bg); color: var(--text-color); border: 1px solid var(--border-color); margin-left: 10px; border-radius: 20px;">登出</button>
         <div id="loadBar" class="loading-bar"></div>
     </div>
     <div id="authError"></div>
 
     <div class="box">
-        <div id="hintMessage" style="color: var(--primary-color); font-weight: bold; min-height: 24px; font-size: 1.1rem; transition: color 0.3s;">遊戲準備中...</div>
+        <div id="hintMessage" style="color: var(--primary-color); font-weight: bold; min-height: 24px; font-size: 1.1rem;">遊戲準備中...</div>
         <span id="syncStatus"></span>
         <div id="badgeDisplay"></div>
 
@@ -237,22 +120,14 @@
             <button id="guessBtn" style="flex: 1;">猜測</button>
             <button id="restartBtn" style="background:#c0574f; color:#fff;">重來</button>
         </div>
-        
-        <div style="display: flex; justify-content: center; gap: 5px; margin-top: 5px;">
-            <button id="historyBtn" class="btn-sub" style="flex: 1;">我的紀錄</button>
-            <button id="pipToggleBtn" class="btn-sub" style="flex: 1;">開啟子母視窗</button>
-        </div>
+        <button id="historyBtn">我的紀錄</button>
 
         <div class="log-container" id="historyLogs"></div>
     </div>
 
 </div>
 
-<!-- 隱藏的 Canvas / Video 用於子母視窗畫中畫渲染 -->
-<canvas id="pipCanvas" width="300" height="300" style="display:none;"></canvas>
-<video id="pipVideo" autoplay playsinline muted style="display:none;"></video>
-
-<!-- 內建面板子母視窗 (備用拖曳介面) -->
+<!-- 子母浮動視窗：不遮擋主畫面，可拖曳移動位置 -->
 <div class="pip-panel" id="historyPanel">
     <div class="pip-header" id="pipHeader">
         <span>我的紀錄</span>
@@ -290,13 +165,30 @@
     let gameActive = true;
     let currentUser = null;
     let lastLoadedUid = null;
-    let historyEntries = [];
+    let historyEntries = []; // 記憶體中的本局紀錄（newest-first），與 game_state 同步
 
-    // --- 登入狀態UI控管 ---
+    // --- 深淺色切換（僅保留這一組） ---
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    let currentTheme = 'dark';
+    function applyTheme(theme) {
+        if (theme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+            themeToggleBtn.innerText = '切換深色';
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            themeToggleBtn.innerText = '切換淺色';
+        }
+    }
+    applyTheme(currentTheme);
+    themeToggleBtn.onclick = () => {
+        currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(currentTheme);
+    };
+
+    // --- 登入狀態 ---
     const statusText = document.getElementById('status');
     const loadBar = document.getElementById('loadBar');
     const loginBtn = document.getElementById('loginBtn');
-    const switchBtn = document.getElementById('switchBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const authErrorBox = document.getElementById('authError');
 
@@ -319,7 +211,7 @@
         if (!user) {
             signInAnonymously(auth).catch((err) => {
                 console.error('匿名登入失敗:', err.code, err.message);
-                showAuthError('無法建立驗證身份，進度可能無法同步。');
+                showAuthError('無法建立驗證身份，進度可能無法同步。請確認 Firebase 主控台已啟用「匿名」登入方式。');
                 updateUserUI(null);
             });
             return;
@@ -335,52 +227,55 @@
             statusText.innerText = `玩家：${user.displayName || '雲端高手'}`;
             statusText.style.color = "#4caf7d";
             loginBtn.style.display = 'none';
-            switchBtn.style.display = 'inline-block';
             logoutBtn.style.display = 'inline-block';
         } else if (user && user.isAnonymous) {
-            statusText.innerText = "遊客模式（點擊綁定 Google）";
+            statusText.innerText = "遊客模式（點擊綁定 Google 保存紀錄）";
             statusText.style.color = "var(--accent-color)";
             loginBtn.style.display = 'inline-block';
             loginBtn.disabled = false;
             loginBtn.innerText = '綁定 Google';
-            switchBtn.style.display = 'none';
             logoutBtn.style.display = 'none';
         } else {
-            statusText.innerText = "未驗證";
+            statusText.innerText = "未驗證（雲端功能可能受限）";
             statusText.style.color = "#e07a6e";
             loginBtn.style.display = 'inline-block';
             loginBtn.disabled = false;
             loginBtn.innerText = '綁定 Google';
-            switchBtn.style.display = 'none';
             logoutBtn.style.display = 'none';
         }
     }
 
-    async function handleGoogleLogin() {
+    loginBtn.onclick = async () => {
         clearAuthError();
         loginBtn.disabled = true;
         loginBtn.innerText = '登入中...';
         try {
-            provider.setCustomParameters({ prompt: 'select_account' });
             const result = await signInWithPopup(auth, provider);
             updateUserUI(result.user);
         } catch (err) {
             loginBtn.disabled = false;
             loginBtn.innerText = '綁定 Google';
-            if (err.code !== 'auth/popup-closed-by-user') {
+            console.error('Google 登入失敗:', err.code, err.message);
+
+            if (err.code === 'auth/popup-blocked') {
+                showAuthError('瀏覽器擋住了登入彈窗，請允許此網站的彈出視窗後再試一次。');
+            } else if (err.code === 'auth/unauthorized-domain') {
+                showAuthError('此網域尚未在 Firebase 主控台的「授權網域」中設定，請至 Authentication → Settings → Authorized domains 新增目前網域。');
+            } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+                // 使用者自己關掉彈窗，不需顯示錯誤
+            } else if (err.code === 'auth/operation-not-supported-in-this-environment') {
+                showAuthError('目前這個瀏覽環境不支援 Google 登入彈窗，請改用一般瀏覽器開啟此頁面。');
+            } else {
                 showAuthError(`登入失敗：${err.message}`);
             }
         }
-    }
-
-    loginBtn.onclick = handleGoogleLogin;
-    switchBtn.onclick = handleGoogleLogin;
+    };
 
     logoutBtn.onclick = async () => {
         await signOut(auth);
     };
 
-    // --- 進度即時同步與復原 ---
+    // --- 進度即時同步：每一步都上傳，避免網頁重載被重置遊戲 ---
     async function ensureGameLoadedFor(user) {
         if (!user || lastLoadedUid === user.uid) return;
         lastLoadedUid = user.uid;
@@ -406,7 +301,6 @@
         document.getElementById('hintMessage').innerText = state.hintMessage || '進度已還原，請繼續猜！';
         document.getElementById('userGuess').value = '';
         renderHistoryLogs();
-        updatePipCanvas();
     }
 
     function renderHistoryLogs() {
@@ -434,7 +328,7 @@
         });
     }
 
-    // --- 計算紙小工具 ---
+    // --- 計算紙小工具：純標記線索用，完全獨立於猜測輸入框 ---
     const numCircles = document.querySelectorAll('.num-circle');
     const digitState = {};
 
@@ -460,77 +354,29 @@
         });
     });
 
-    // --- 子母界面 Picture-in-Picture (畫中畫) 功能 ---
-    const pipCanvas = document.getElementById('pipCanvas');
-    const pipVideo = document.getElementById('pipVideo');
-    const pipToggleBtn = document.getElementById('pipToggleBtn');
-
-    function updatePipCanvas() {
-        const ctx = pipCanvas.getContext('2d');
-        ctx.fillStyle = '#1e1e1e';
-        ctx.fillRect(0, 0, 300, 300);
-
-        ctx.fillStyle = '#29b6f6';
-        ctx.font = 'bold 20px sans-serif';
-        ctx.fillText('1A2B 猜數字紀錄', 15, 30);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '14px monospace';
-        let y = 65;
-
-        if (historyEntries.length === 0) {
-            ctx.fillStyle = '#888888';
-            ctx.fillText('尚無猜測紀錄...', 15, y);
-        } else {
-            const recent = historyEntries.slice(0, 8);
-            recent.forEach(e => {
-                ctx.fillStyle = e.success ? '#4caf7d' : '#ffffff';
-                ctx.fillText(`#${e.n} [ ${e.g} ]  ->  ${e.a}A${e.b}B`, 15, y);
-                y += 28;
-            });
-        }
-    }
-
-    pipToggleBtn.addEventListener('click', async () => {
-        if (document.pictureInPictureElement) {
-            await document.exitPictureInPicture();
-            return;
-        }
-
-        try {
-            updatePipCanvas();
-            const stream = pipCanvas.captureStream(10);
-            pipVideo.srcObject = stream;
-            await pipVideo.play();
-            await pipVideo.requestPictureInPicture();
-        } catch (err) {
-            console.warn("系統畫中畫受限，切換為內建浮動面板:", err);
-            toggleHistoryPanel();
-        }
-    });
-
-    // --- 舊版浮動視窗備用 ---
+    // --- 子母浮動視窗：我的紀錄（依身份分開，可拖曳） ---
     const historyBtn = document.getElementById('historyBtn');
     const historyPanel = document.getElementById('historyPanel');
     const historyList = document.getElementById('historyList');
     const historyOwnerTag = document.getElementById('historyOwnerTag');
     const pipHeader = document.getElementById('pipHeader');
 
-    function toggleHistoryPanel() {
+    historyBtn.addEventListener('click', () => {
         if (historyPanel.style.display === 'block') {
             historyPanel.style.display = 'none';
         } else {
             openHistory();
         }
-    }
-
-    historyBtn.addEventListener('click', toggleHistoryPanel);
+    });
     document.getElementById('historyCloseBtn').addEventListener('click', () => {
         historyPanel.style.display = 'none';
     });
 
     async function openHistory() {
-        if (!currentUser) return;
+        if (!currentUser) {
+            alert('身份驗證尚未完成，請稍後再試一次。');
+            return;
+        }
         historyPanel.style.display = 'block';
         historyList.innerHTML = '<div class="history-empty">載入中...</div>';
         historyOwnerTag.innerText = (!currentUser.isAnonymous)
@@ -551,11 +397,12 @@
                 </div>
             `).join('');
         } catch (err) {
+            console.error('讀取紀錄失敗:', err.code, err.message);
             historyList.innerHTML = `<div class="history-empty">讀取失敗：${err.code || err.message}</div>`;
         }
     }
 
-    // 拖曳功能
+    // 拖曳移動子母視窗
     (function enableDrag(handle, panel) {
         let dragging = false, offsetX = 0, offsetY = 0;
         handle.addEventListener('pointerdown', (e) => {
@@ -574,7 +421,7 @@
         ['pointerup', 'pointercancel'].forEach(ev => handle.addEventListener(ev, () => { dragging = false; }));
     })(pipHeader, historyPanel);
 
-    // --- 1A2B 核心邏輯 ---
+    // --- 1A2B 遊戲核心邏輯 ---
     function restartGame() {
         let nums = ['0','1','2','3','4','5','6','7','8','9'];
         for (let i = nums.length - 1; i > 0; i--) {
@@ -594,7 +441,6 @@
         Object.keys(digitState).forEach(k => delete digitState[k]);
 
         syncGameState();
-        updatePipCanvas();
     }
 
     async function checkGuess() {
@@ -648,7 +494,6 @@
             syncGameState();
         }
 
-        updatePipCanvas();
         document.getElementById('userGuess').value = '';
     }
 
