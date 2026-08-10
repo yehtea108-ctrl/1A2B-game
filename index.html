@@ -57,14 +57,14 @@
         /* 登入錯誤提示 */
         #authError { display: none; font-size: 11px; color: #ff8a80; margin-top: 6px; max-width: 300px; text-align: center; line-height: 1.4; }
 
-        /* 圈選數字小工具 */
+        /* 計算紙小工具（獨立於輸入框，僅供標記線索用） */
         .picker-title { font-size: 0.85rem; color: #999; margin: 14px 0 6px; }
         .number-picker { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 280px; margin: 0 auto; }
         .num-circle { width: 46px; height: 46px; border-radius: 50%; background: #2a2a2a; color: #fff; border: 2px solid #333; font-size: 1.1rem; font-weight: bold; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; }
-        .num-circle.selected { background: var(--primary-color); color: #000; border-color: var(--primary-color); }
-        .num-circle .order-tag { position: absolute; font-size: 0.6rem; margin-top: -22px; margin-left: 22px; background: var(--accent-color); color: #000; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
-        #pickerPreview { font-size: 1.3rem; letter-spacing: 6px; margin: 12px 0; font-weight: bold; color: var(--primary-color); font-family: monospace; }
-        #pickerClearBtn { background: #555; color: #fff; font-size: 0.8rem; padding: 6px 14px; }
+        .num-circle.excluded { background: #2a2a2a; color: #666; border-color: #444; text-decoration: line-through; opacity: 0.6; }
+        .num-circle.confirmed { background: #66bb6a; color: #000; border-color: #66bb6a; }
+        #pickerLegend { font-size: 0.72rem; color: #777; margin-top: 8px; }
+        #pickerClearBtn { background: #555; color: #fff; font-size: 0.8rem; padding: 6px 14px; margin-top: 6px; }
 
         /* 歷史紀錄面板（依身份分開） */
         #historyPanelBackdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; align-items: flex-end; justify-content: center; }
@@ -102,7 +102,7 @@
         
         <input type="text" id="userGuess" maxlength="4" pattern="\d*" inputmode="numeric" placeholder="輸入4位不重複數字">
 
-        <div class="picker-title">或直接圈選數字（依序點選 4 個）</div>
+        <div class="picker-title">🧮 計算紙（獨立筆記，不影響上方輸入，點兩下切換標記）</div>
         <div class="number-picker" id="numberPicker">
             <button class="num-circle" data-num="0">0</button>
             <button class="num-circle" data-num="1">1</button>
@@ -115,8 +115,8 @@
             <button class="num-circle" data-num="8">8</button>
             <button class="num-circle" data-num="9">9</button>
         </div>
-        <div id="pickerPreview">＿ ＿ ＿ ＿</div>
-        <button id="pickerClearBtn">清除圈選</button>
+        <div id="pickerLegend">灰=排除、綠=確定在密碼裡；點擊循環切換</div>
+        <button id="pickerClearBtn">清除標記</button>
         
         <div style="display: flex; justify-content: center; gap: 5px;">
             <button id="guessBtn" style="flex: 1;">猜測</button>
@@ -271,46 +271,32 @@
         await signOut(auth);
     };
 
-    // --- 圈選數字小工具：依序點選數字組成 4 位猜測，會同步進輸入框 ---
+    // --- 計算紙小工具：純粹讓玩家自己標記線索用，完全獨立於猜測輸入框 ---
+    // 每個數字有三種狀態循環：一般 → 排除(灰) → 確定在密碼裡(綠) → 一般
     const guessInput = document.getElementById('userGuess');
-    const pickerPreview = document.getElementById('pickerPreview');
     const numCircles = document.querySelectorAll('.num-circle');
-    let pickedDigits = [];
-
-    function renderPicker() {
-        pickerPreview.innerText = [0,1,2,3].map(i => pickedDigits[i] ?? '＿').join(' ');
-        numCircles.forEach(btn => {
-            const n = btn.dataset.num;
-            btn.classList.toggle('selected', pickedDigits.includes(n));
-        });
-        guessInput.value = pickedDigits.join('');
-    }
+    const digitState = {}; // { '0': 'excluded' | 'confirmed' | undefined }
 
     numCircles.forEach(btn => {
         btn.addEventListener('click', () => {
             const n = btn.dataset.num;
-            const existingIndex = pickedDigits.indexOf(n);
-            if (existingIndex !== -1) {
-                // 再點一次已選的數字 = 取消選取
-                pickedDigits.splice(existingIndex, 1);
-            } else if (pickedDigits.length < 4) {
-                pickedDigits.push(n);
-            }
-            renderPicker();
+            const current = digitState[n];
+            let next;
+            if (!current) next = 'excluded';
+            else if (current === 'excluded') next = 'confirmed';
+            else next = null; // 回到一般狀態
+
+            if (next) digitState[n] = next; else delete digitState[n];
+            btn.classList.remove('excluded', 'confirmed');
+            if (next) btn.classList.add(next);
         });
     });
 
     document.getElementById('pickerClearBtn').addEventListener('click', () => {
-        pickedDigits = [];
-        renderPicker();
-    });
-
-    // 手動在輸入框打字時，圈選畫面也要同步清空，避免顯示不一致
-    guessInput.addEventListener('input', () => {
-        if (guessInput.value.length === 0) {
-            pickedDigits = [];
-            renderPicker();
-        }
+        numCircles.forEach(btn => {
+            btn.classList.remove('excluded', 'confirmed');
+            delete digitState[btn.dataset.num];
+        });
     });
 
     // --- 查看紀錄：每個使用者（依 UID）只讀得到自己的資料 ---
@@ -376,8 +362,9 @@
         document.getElementById('badgeDisplay').innerHTML = '';
         document.getElementById('hintMessage').innerText = '新遊戲開始，請輸入 4 位數！';
         document.getElementById('userGuess').value = '';
-        pickedDigits = [];
-        renderPicker();
+        // 新一局的密碼不同，之前的計算紙標記已不適用，一併清空
+        document.querySelectorAll('.num-circle').forEach(btn => btn.classList.remove('excluded', 'confirmed'));
+        Object.keys(digitState).forEach(k => delete digitState[k]);
     }
 
     async function checkGuess() {
@@ -453,8 +440,6 @@
         }
         
         document.getElementById('userGuess').value = '';
-        pickedDigits = [];
-        renderPicker();
     }
 
     // 按鈕與 Enter 鍵綁定
