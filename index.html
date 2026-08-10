@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>1A2B 猜數字 - 雲端認證雙強豪華版</title>
+    <title>1A2B 猜數字 - 正式版</title>
     <style>
         /* 預設深色主題 */
         :root {
@@ -56,6 +56,25 @@
 
         /* 登入錯誤提示 */
         #authError { display: none; font-size: 11px; color: #ff8a80; margin-top: 6px; max-width: 300px; text-align: center; line-height: 1.4; }
+
+        /* 計算紙小工具（獨立於輸入框，僅供標記線索用） */
+        .picker-title { font-size: 0.85rem; color: #999; margin: 14px 0 6px; }
+        .number-picker { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 280px; margin: 0 auto; }
+        .num-circle { width: 46px; height: 46px; border-radius: 50%; background: #2a2a2a; color: #fff; border: 2px solid #333; font-size: 1.1rem; font-weight: bold; padding: 0; margin: 0; display: flex; align-items: center; justify-content: center; }
+        .num-circle.excluded { background: #2a2a2a; color: #666; border-color: #444; text-decoration: line-through; opacity: 0.6; }
+        .num-circle.confirmed { background: #66bb6a; color: #000; border-color: #66bb6a; }
+        #pickerLegend { font-size: 0.72rem; color: #777; margin-top: 8px; }
+        #pickerClearBtn { background: #555; color: #fff; font-size: 0.8rem; padding: 6px 14px; margin-top: 6px; }
+
+        /* 歷史紀錄面板（依身份分開） */
+        #historyPanelBackdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50; align-items: flex-end; justify-content: center; }
+        #historyPanel { background: var(--box-bg); width: 100%; max-width: 340px; max-height: 70vh; overflow-y: auto; border-radius: 20px 20px 0 0; padding: 18px; box-sizing: border-box; }
+        #historyPanel h3 { margin: 0 0 10px; font-size: 1rem; }
+        #historyPanel .owner-tag { font-size: 0.75rem; color: #999; margin-bottom: 10px; }
+        .history-item { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid #2a2a2a; font-size: 0.85rem; text-align: left; }
+        .history-empty { font-size: 0.85rem; color: #777; padding: 20px 0; }
+        #historyCloseBtn { width: 100%; margin-top: 10px; background: #555; color: #fff; }
+        #historyBtn { background: #37474f; color: #fff; font-size: 0.8rem; padding: 8px 16px; }
     </style>
 </head>
 <body>
@@ -82,24 +101,50 @@
         <div id="badgeDisplay"></div>
         
         <input type="text" id="userGuess" maxlength="4" pattern="\d*" inputmode="numeric" placeholder="輸入4位不重複數字">
+
+        <div class="picker-title">🧮 計算紙（獨立筆記，不影響上方輸入，點兩下切換標記）</div>
+        <div class="number-picker" id="numberPicker">
+            <button class="num-circle" data-num="0">0</button>
+            <button class="num-circle" data-num="1">1</button>
+            <button class="num-circle" data-num="2">2</button>
+            <button class="num-circle" data-num="3">3</button>
+            <button class="num-circle" data-num="4">4</button>
+            <button class="num-circle" data-num="5">5</button>
+            <button class="num-circle" data-num="6">6</button>
+            <button class="num-circle" data-num="7">7</button>
+            <button class="num-circle" data-num="8">8</button>
+            <button class="num-circle" data-num="9">9</button>
+        </div>
+        <div id="pickerLegend">灰=排除、綠=確定在密碼裡；點擊循環切換</div>
+        <button id="pickerClearBtn">清除標記</button>
         
         <div style="display: flex; justify-content: center; gap: 5px;">
             <button id="guessBtn" style="flex: 1;">猜測</button>
             <button id="restartBtn" style="background:#ef5350; color:#fff;">重來</button>
         </div>
+        <button id="historyBtn">📜 查看我的紀錄</button>
         
         <div class="log-container" id="historyLogs"></div>
     </div>
 
 </div>
 
+<div id="historyPanelBackdrop">
+    <div id="historyPanel">
+        <h3>📜 我的遊戲紀錄</h3>
+        <div class="owner-tag" id="historyOwnerTag"></div>
+        <div id="historyList"><div class="history-empty">載入中...</div></div>
+        <button id="historyCloseBtn">關閉</button>
+    </div>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import {
         getAuth, GoogleAuthProvider, signInWithPopup,
-        signOut, onAuthStateChanged
+        signInAnonymously, signOut, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     // 完美融合您的 App 配置與您提供的 OAuth Client ID
     const firebaseConfig = {
@@ -151,20 +196,41 @@
     onAuthStateChanged(auth, (user) => {
         loadBar.style.width = '100%';
         setTimeout(() => { loadBar.style.display = 'none'; }, 300);
+
+        if (!user) {
+            // 資料庫規則要求「已驗證」才能寫入，所以沒有 Google 登入時
+            // 自動用匿名登入建立一個驗證身份，玩家不需要額外操作
+            signInAnonymously(auth).catch((err) => {
+                console.error('匿名登入失敗:', err.code, err.message);
+                showAuthError('無法建立驗證身份，分數可能無法存入雲端。請至 Firebase 主控台 → Authentication → Sign-in method，確認「匿名」登入已啟用。');
+                updateUserUI(null);
+            });
+            return; // 匿名登入成功後 onAuthStateChanged 會再次觸發，屆時再更新 UI
+        }
+
         updateUserUI(user);
     });
 
     function updateUserUI(user) {
-        if (user) {
-            currentUser = user;
+        currentUser = user;
+        if (user && !user.isAnonymous) {
+            // Google 登入成功
             statusText.innerText = `👤 玩家：${user.displayName || '雲端高手'}`;
             statusText.style.color = "#81c784";
             loginBtn.style.display = 'none';
             logoutBtn.style.display = 'inline-block';
-        } else {
-            currentUser = null;
-            statusText.innerText = "👤 遊客模式 (點擊綁定雲端)";
+        } else if (user && user.isAnonymous) {
+            // 匿名身份：已可正常寫入分數，但畫面上仍鼓勵綁定 Google
+            statusText.innerText = "👤 遊客模式 (點擊綁定 Google 保存紀錄)";
             statusText.style.color = "#ffb74d";
+            loginBtn.style.display = 'inline-block';
+            loginBtn.disabled = false;
+            loginBtn.innerText = '綁定 Google';
+            logoutBtn.style.display = 'none';
+        } else {
+            // 完全沒有身份（匿名登入也失敗時）
+            statusText.innerText = "👤 未驗證 (雲端功能可能受限)";
+            statusText.style.color = "#ef5350";
             loginBtn.style.display = 'inline-block';
             loginBtn.disabled = false;
             loginBtn.innerText = '綁定 Google';
@@ -205,6 +271,80 @@
         await signOut(auth);
     };
 
+    // --- 計算紙小工具：純粹讓玩家自己標記線索用，完全獨立於猜測輸入框 ---
+    // 每個數字有三種狀態循環：一般 → 排除(灰) → 確定在密碼裡(綠) → 一般
+    const guessInput = document.getElementById('userGuess');
+    const numCircles = document.querySelectorAll('.num-circle');
+    const digitState = {}; // { '0': 'excluded' | 'confirmed' | undefined }
+
+    numCircles.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const n = btn.dataset.num;
+            const current = digitState[n];
+            let next;
+            if (!current) next = 'excluded';
+            else if (current === 'excluded') next = 'confirmed';
+            else next = null; // 回到一般狀態
+
+            if (next) digitState[n] = next; else delete digitState[n];
+            btn.classList.remove('excluded', 'confirmed');
+            if (next) btn.classList.add(next);
+        });
+    });
+
+    document.getElementById('pickerClearBtn').addEventListener('click', () => {
+        numCircles.forEach(btn => {
+            btn.classList.remove('excluded', 'confirmed');
+            delete digitState[btn.dataset.num];
+        });
+    });
+
+    // --- 查看紀錄：每個使用者（依 UID）只讀得到自己的資料 ---
+    const historyBtn = document.getElementById('historyBtn');
+    const historyBackdrop = document.getElementById('historyPanelBackdrop');
+    const historyList = document.getElementById('historyList');
+    const historyOwnerTag = document.getElementById('historyOwnerTag');
+
+    async function openHistory() {
+        if (!currentUser) {
+            alert('身份驗證尚未完成，請稍後再試一次。');
+            return;
+        }
+        historyBackdrop.style.display = 'flex';
+        historyList.innerHTML = '<div class="history-empty">載入中...</div>';
+        historyOwnerTag.innerText = (!currentUser.isAnonymous)
+            ? `身份：${currentUser.displayName || '雲端高手'}（僅顯示你自己的紀錄）`
+            : `身份：訪客（此裝置專屬，僅顯示你自己的紀錄）`;
+
+        try {
+            const snap = await get(ref(db, `scores/${currentUser.uid}`));
+            if (!snap.exists()) {
+                historyList.innerHTML = '<div class="history-empty">還沒有任何紀錄，快去答對一題吧！</div>';
+                return;
+            }
+            const records = Object.values(snap.val())
+                .sort((a, b) => (b.time > a.time ? 1 : -1));
+
+            historyList.innerHTML = records.map(r => `
+                <div class="history-item">
+                    <span>${r.time}</span>
+                    <span>${r.guesses} 次 · ${r.badge}</span>
+                </div>
+            `).join('');
+        } catch (err) {
+            console.error('讀取紀錄失敗:', err.code, err.message);
+            historyList.innerHTML = `<div class="history-empty">讀取失敗：${err.code || err.message}</div>`;
+        }
+    }
+
+    historyBtn.addEventListener('click', openHistory);
+    document.getElementById('historyCloseBtn').addEventListener('click', () => {
+        historyBackdrop.style.display = 'none';
+    });
+    historyBackdrop.addEventListener('click', (e) => {
+        if (e.target === historyBackdrop) historyBackdrop.style.display = 'none';
+    });
+
     // --- 1A2B 遊戲核心邏輯：重來才清空紀錄，答對時不清空 ---
     function restartGame() {
         let nums = ['0','1','2','3','4','5','6','7','8','9'];
@@ -222,6 +362,9 @@
         document.getElementById('badgeDisplay').innerHTML = '';
         document.getElementById('hintMessage').innerText = '新遊戲開始，請輸入 4 位數！';
         document.getElementById('userGuess').value = '';
+        // 新一局的密碼不同，之前的計算紙標記已不適用，一併清空
+        document.querySelectorAll('.num-circle').forEach(btn => btn.classList.remove('excluded', 'confirmed'));
+        Object.keys(digitState).forEach(k => delete digitState[k]);
     }
 
     async function checkGuess() {
@@ -261,26 +404,35 @@
             const cloudTag = document.getElementById('cloudTag');
             cloudTag.style.display = 'inline-block';
 
-            // 準備寫入雲端
+            // 準備寫入雲端 —— 依照使用者 UID 分開存放，讓每個人只存取自己的紀錄
             const recordId = "score_" + Date.now();
             const recordData = {
-                player: currentUser ? (currentUser.displayName || "雲端挑戰者") : "在地遊客",
+                player: (currentUser && !currentUser.isAnonymous) ? (currentUser.displayName || "雲端挑戰者") : "在地遊客",
                 guesses: guessCount,
                 badge: badgeName,
                 time: new Date().toLocaleString()
             };
 
-            // 無論有沒有登入，都直接非同步拋入資料庫
-            set(ref(db, 'scores/' + recordId), recordData)
-                .then(() => {
-                    cloudTag.innerText = "已存入雲端";
-                    cloudTag.style.background = "#2e7d32";
-                })
-                .catch((err) => {
-                    cloudTag.innerText = "同步失敗 (在地暫存)";
-                    cloudTag.style.background = "#757575";
-                    console.log("寫入失敗（通常為Rules未開放）:", err.message);
-                });
+            if (!currentUser) {
+                cloudTag.innerText = "尚未驗證，無法同步";
+                cloudTag.style.background = "#757575";
+            } else {
+                set(ref(db, `scores/${currentUser.uid}/${recordId}`), recordData)
+                    .then(() => {
+                        cloudTag.innerText = "已存入雲端";
+                        cloudTag.style.background = "#2e7d32";
+                    })
+                    .catch((err) => {
+                        // 把實際錯誤代碼顯示出來，方便判斷是不是 Realtime Database Rules 的問題
+                        cloudTag.innerText = `寫入失敗: ${err.code || err.message}`;
+                        cloudTag.style.background = "#c62828";
+                        cloudTag.title = err.message;
+                        console.error("寫入資料庫失敗:", err.code, err.message);
+                        if (err.code === 'PERMISSION_DENIED') {
+                            showAuthError('資料庫寫入被拒絕（PERMISSION_DENIED）：請確認 Rules 中 "scores/$uid" 節點允許本人讀寫（auth.uid === $uid）。');
+                        }
+                    });
+            }
 
         } else {
             document.getElementById('hintMessage').innerText = `上次結果: ${a}A${b}B`;
